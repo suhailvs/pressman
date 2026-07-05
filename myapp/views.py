@@ -50,3 +50,17 @@ def location_detail(request, pk):
         return redirect("location_list")
 
     return render(request, "locations/view_location.html", {"location": location})
+
+def location_edit(request, pk):
+    location = get_object_or_404(Location, pk=pk)
+ 
+    if request.method == "POST":
+        form = LocationForm(request.POST, request.FILES, instance=location)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'"{location.name}" was updated.')
+            return redirect("location_detail", pk=location.pk)
+    else:
+        form = LocationForm(instance=location)
+ 
+    return render(request, "locations/edit_location.html", {"form": form, "location": location})

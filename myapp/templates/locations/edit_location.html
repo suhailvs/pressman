@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}New Location{% endblock %}
+{% block title %}Edit {{ location.name }}{% endblock %}
 
 {% block content %}
 <div class="chat-app">
@@ -13,7 +13,7 @@
         <path d="M15 18l-6-6 6-6"/>
       </svg>
     </button>
-    <h1 class="chat-header__title">New Location</h1>
+    <h1 class="chat-header__title">Edit Location</h1>
     <div class="chat-header__actions"></div>
   </header>
 
@@ -21,15 +21,19 @@
   <form class="add-form" method="post" enctype="multipart/form-data" novalidate>
     {% csrf_token %}
 
-    <!-- Photo picker -->
+    <!-- Photo picker, prefilled with the current photo if one exists -->
     <div class="add-form__photo">
       <label for="{{ form.photo.id_for_label }}" class="photo-picker">
         <div class="photo-picker__preview" id="photo-preview">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <rect x="3" y="7" width="18" height="13" rx="2"/>
-            <path d="M8 7l1.5-3h5L16 7"/>
-            <circle cx="12" cy="13.5" r="3.5"/>
-          </svg>
+          {% if location.photo %}
+            <img src="{{ location.photo.url }}" alt="{{ location.name }}">
+          {% else %}
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="3" y="7" width="18" height="13" rx="2"/>
+              <path d="M8 7l1.5-3h5L16 7"/>
+              <circle cx="12" cy="13.5" r="3.5"/>
+            </svg>
+          {% endif %}
         </div>
         <span class="photo-picker__badge">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -38,7 +42,7 @@
         </span>
       </label>
       {{ form.photo }}
-      <p class="add-form__photo-hint">Add a photo</p>
+      <p class="add-form__photo-hint">Change photo</p>
     </div>
 
     {% if form.non_field_errors %}
@@ -88,7 +92,7 @@
       Use current location
     </button>
 
-    <button type="submit" class="save-btn">Save location</button>
+    <button type="submit" class="save-btn">Save changes</button>
   </form>
 </div>
 {% endblock %}
