@@ -11,4 +11,5 @@ urlpatterns = [
     path("locations/<int:pk>/edit/", views.location_edit, name="location_edit"),
     path("locations/map/", views.location_map, name="location_map"),
     path("locations/<int:pk>/orders/", views.location_orders, name="location_orders"),
+    path("backup/", views.backup_media, name="backup_media"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
