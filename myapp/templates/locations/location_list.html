@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load thumbnail %}
 
 {% block title %}Locations{% endblock %}
 
@@ -10,11 +11,6 @@
   <header class="chat-header">
     <h1 class="chat-header__title">Locations</h1>
     <div class="chat-header__actions">
-      <button class="icon-btn" type="button" aria-label="Search">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-      </button>
       <button class="icon-btn" type="button" aria-label="More options">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
           <circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/>
@@ -23,13 +19,23 @@
     </div>
   </header>
 
-  <!-- Search -->
+  <!-- Search (client-side, filters the list below with no page reload) -->
   <div class="chat-search">
     <div class="chat-search__box">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
-      <input type="search" class="chat-search__input" placeholder="Search locations">
+      <input
+        type="search"
+        id="search-input"
+        class="chat-search__input"
+        placeholder="Search locations"
+        autocomplete="off">
+      <a href="#" id="search-clear" class="chat-search__clear" aria-label="Clear search" style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </a>
     </div>
   </div>
 
@@ -39,12 +45,19 @@
     <div class="chat-row"
          role="listitem"
          tabindex="0"
+         data-search="{{ location.name|default:'' }} {{ location.house_name|default:'' }} {{ location.phone|default:'' }}"
          onclick="window.location='{% url 'location_detail' location.pk %}'"
          onkeydown="if(event.key==='Enter'){window.location='{% url 'location_detail' location.pk %}'}">
 
       <div class="chat-row__avatar-wrap">
         {% if location.photo %}
-          <img src="{{ location.photo.url }}" alt="{{ location.name }}" class="chat-row__avatar">
+          {% thumbnail location.photo "100x100" crop="center" as im %}
+            <img src="{{ im.url }}" alt="{{ location.name }}" class="chat-row__avatar">
+          {% empty %}
+            <div class="chat-row__avatar chat-row__avatar--fallback">
+              {{ location.name|slice:":1"|upper }}
+            </div>
+          {% endthumbnail %}
         {% else %}
           <div class="chat-row__avatar chat-row__avatar--fallback">
             {{ location.name|slice:":1"|upper }}
@@ -83,6 +96,13 @@
       <p class="chat-empty__text">Tap the + button to add your first location.</p>
     </div>
     {% endfor %}
+
+    {% if locations %}
+    <div class="chat-empty" id="no-results" style="display:none;">
+      <p class="chat-empty__title">No matches</p>
+      <p class="chat-empty__text">Try a different name, phone number, or house detail.</p>
+    </div>
+    {% endif %}
   </main>
 
   <!-- Floating action button -->
@@ -107,6 +127,11 @@
   .chat-search__input{
     border: none; background: transparent; outline: none;
     width: 100%; font-size: 0.9rem; color: var(--wa-text);
+  }
+  .chat-search__input::-webkit-search-cancel-button{ display: none; }
+  .chat-search__clear{
+    display: flex; align-items: center; justify-content: center;
+    color: var(--wa-text-muted); flex-shrink: 0;
   }
 
   /* List */
@@ -164,4 +189,39 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.2); text-decoration: none;
   }
   .fab:active{ background: var(--wa-green); }
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  $(function () {
+    const $input = $("#search-input");
+    const $clearBtn = $("#search-clear");
+    const $noResults = $("#no-results");
+    const $rows = $(".chat-row");
+
+    function applyFilter() {
+      const value = $input.val().trim().toLowerCase();
+      $clearBtn.css("display", value ? "flex" : "none");
+
+      let visibleCount = 0;
+      $rows.each(function () {
+        const $row = $(this);
+        const haystack = ($row.data("search") || "").toString().toLowerCase();
+        const matches = !value || haystack.includes(value);
+        $row.css("display", matches ? "flex" : "none");
+        if (matches) visibleCount += 1;
+      });
+
+      $noResults.css("display", (value && visibleCount === 0) ? "block" : "none");
+    }
+
+    $input.on("input", applyFilter);
+
+    $clearBtn.on("click", function (e) {
+      e.preventDefault();
+      $input.val("").trigger("focus");
+      applyFilter();
+    });
+  });
+</script>
 {% endblock %}

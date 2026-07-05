@@ -5,10 +5,12 @@ from django.contrib import messages
 from .forms import LocationForm
 from .models import Location
 
+
 def get_lat_lon(final_url):
     import re
     from urllib.parse import urlparse, parse_qs
-    m = re.search(r'(-?\d+\.\d+),(-?\d+\.\d+)', final_url)
+
+    m = re.search(r"(-?\d+\.\d+),(-?\d+\.\d+)", final_url)
     if m:
         return float(m.group(1)), float(m.group(2))
     params = parse_qs(urlparse(final_url).query)
@@ -18,13 +20,12 @@ def get_lat_lon(final_url):
             return lat, lon
     return None
 
+
 def home(request):
-    response = requests.get("https://maps.app.goo.gl/j5WbXh99bk4pha7A6?g_st=aw", allow_redirects=True)
-    print(get_lat_lon((response.url)))    
-    locations = Location.objects.all()
-    return render(request, 'locations/location_list.html', {'locations': locations})
-
-
+    # response = requests.get("https://maps.app.goo.gl/j5WbXh99bk4pha7A6?g_st=aw", allow_redirects=True)
+    # print(get_lat_lon((response.url)))
+    locations = Location.objects.all().order_by("-updated_at")
+    return render(request, "locations/location_list.html", {"locations": locations})
 
 
 def location_create(request):
@@ -51,9 +52,10 @@ def location_detail(request, pk):
 
     return render(request, "locations/view_location.html", {"location": location})
 
+
 def location_edit(request, pk):
     location = get_object_or_404(Location, pk=pk)
- 
+
     if request.method == "POST":
         form = LocationForm(request.POST, request.FILES, instance=location)
         if form.is_valid():
@@ -62,5 +64,7 @@ def location_edit(request, pk):
             return redirect("location_detail", pk=location.pk)
     else:
         form = LocationForm(instance=location)
- 
-    return render(request, "locations/edit_location.html", {"form": form, "location": location})
+
+    return render(
+        request, "locations/edit_location.html", {"form": form, "location": location}
+    )

@@ -1,3 +1,4 @@
 Pillow
 django
 requests
+sorl-thumbnail
