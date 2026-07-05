@@ -1,5 +1,5 @@
 [{
-    "model": "auth.user",
+    "model": "myapp.user",
     "pk": 1,
     "fields": {
         "password": "pbkdf2_sha256$1200000$5QVbngeYa8Y2o6ZWCGqqn1$d6ihWYuPSxsMHpXzTXo5ERbjU8LE+dbxPLMjozd2qpU=",
@@ -9,6 +9,7 @@
         "first_name": "",
         "last_name": "",
         "email": "",
+        "phone": "",
         "is_staff": true,
         "is_active": true,
         "date_joined": "2026-07-05T04:13:06.829Z",
