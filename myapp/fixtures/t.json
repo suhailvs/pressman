@@ -1,4 +1,5 @@
-[{
+[
+{
     "model": "myapp.user",
     "pk": 1,
     "fields": {
@@ -9,11 +10,27 @@
         "first_name": "",
         "last_name": "",
         "email": "",
-        "phone": "",
         "is_staff": true,
         "is_active": true,
         "date_joined": "2026-07-05T04:13:06.829Z",
+        "phone": "",
         "groups": [],
         "user_permissions": []
     }
-}]
+},
+{
+    "model": "myapp.location",
+    "pk": 1,
+    "fields": {
+        "name": "Saidalivi Pookad",
+        "latitude": "10.5953581",
+        "longitude": "76.4954253",
+        "phone": null,
+        "house_name": null,
+        "photo": "",
+        "is_active": true,
+        "created_at": "2026-07-05T09:01:16.206Z",
+        "updated_at": "2026-07-05T09:01:16.206Z"
+    }
+}
+]

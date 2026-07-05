@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
-    phone = models.CharField(max_length=50, blank=False)
+    phone = models.CharField(max_length=20, blank=True, null=True)
 
 class Location(models.Model):
     name = models.CharField(max_length=255)
@@ -11,5 +11,6 @@ class Location(models.Model):
     phone = models.CharField(max_length=20, blank=True, null=True)
     house_name = models.CharField(max_length=255, blank=True, null=True)
     photo = models.ImageField(upload_to="locations/", blank=True, null=True)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
