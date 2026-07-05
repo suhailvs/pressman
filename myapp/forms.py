@@ -2,7 +2,7 @@ import re
 import requests
 from decimal import Decimal, ROUND_HALF_UP
 from django import forms
-from .models import Location
+from .models import Location,Order
 
 
 class LocationForm(forms.ModelForm):
@@ -118,3 +118,26 @@ class LocationForm(forms.ModelForm):
         # else: editing and left blank -> keep the instance's existing lat/lng untouched
 
         return cleaned_data
+
+
+class OrderForm(forms.ModelForm):
+    class Meta:
+        model = Order
+        fields = ["date", "note", "photo"]
+        widgets = {
+            "date": forms.DateInput(attrs={
+                "class": "field__input",
+                "type": "date",
+            }),
+            "note": forms.Textarea(attrs={
+                "class": "field__input field__input--textarea",
+                "placeholder": "What was ordered, quantity, anything worth noting…",
+                "rows": 3,
+            }),
+            "photo": forms.ClearableFileInput(attrs={
+                "class": "field__file",
+                "accept": "image/*",
+                "capture": "environment",
+            }),
+        }
+ 

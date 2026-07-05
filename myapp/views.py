@@ -1,8 +1,8 @@
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 
-from .forms import LocationForm
-from .models import Location
+from .forms import LocationForm,OrderForm
+from .models import Location,Order
 
 
 def home(request):
@@ -58,3 +58,31 @@ def location_map(request):
         .exclude(longitude__isnull=True)
     )
     return render(request, "locations/location_map.html", {"locations": locations})
+
+
+def location_orders(request, pk):
+    location = get_object_or_404(Location, pk=pk)
+ 
+    if request.method == "POST":
+        form = OrderForm(request.POST, request.FILES)
+        if form.is_valid():
+            order = form.save(commit=False)
+            order.location = location
+            order.save()
+            messages.success(request, "Order added.")
+            return redirect("location_orders", pk=location.pk)
+        # Invalid: fall through and re-render the list with the modal
+        # reopened so the person can see what needs fixing.
+        show_add_modal = True
+    else:
+        form = OrderForm()
+        show_add_modal = False
+ 
+    orders = location.orders.all().order_by("-date", "-created_at")
+ 
+    return render(request, "locations/order_list.html", {
+        "location": location,
+        "orders": orders,
+        "form": form,
+        "show_add_modal": show_add_modal,
+    })

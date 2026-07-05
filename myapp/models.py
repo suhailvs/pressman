@@ -14,3 +14,14 @@ class Location(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class Order(models.Model):
+    location = models.ForeignKey('Location', on_delete=models.CASCADE, related_name='orders')
+    date = models.DateField()
+    note = models.TextField(blank=True)
+    photo = models.ImageField(upload_to="orders/", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Order #{self.pk} - {self.location.name} ({self.date})"
