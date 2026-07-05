@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% block page_title %}{% endblock %}{% endblock %}
+
+{% block content %}
+<div class="chat-app">
+
+  <header class="chat-header">
+    {% block header_left %}{% endblock %}
+    <h1 class="chat-header__title">{% block header_title %}{% endblock %}</h1>
+    <div class="chat-header__actions">{% block header_right %}{% endblock %}</div>
+  </header>
+
+  <form class="add-form" method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    <div class="add-form__photo">
+      <label for="{{ form.photo.id_for_label }}" class="photo-picker">
+        <div class="photo-picker__preview" id="photo-preview">
+          {% block photo_preview %}
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="7" width="18" height="13" rx="2"/>
+            <path d="M8 7l1.5-3h5L16 7"/>
+            <circle cx="12" cy="13.5" r="3.5"/>
+          </svg>
+          {% endblock %}
+        </div>
+        <span class="photo-picker__badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </span>
+      </label>
+      {{ form.photo }}
+      <p class="add-form__photo-hint">{% block photo_hint %}Add a photo{% endblock %}</p>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="alert-error">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="field">
+      <label class="field__label" for="{{ form.name.id_for_label }}">Location name</label>
+      {{ form.name }}
+      {% if form.name.errors %}<p class="field__error">{{ form.name.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="{{ form.house_name.id_for_label }}">House / flat details</label>
+      {{ form.house_name }}
+      {% if form.house_name.errors %}<p class="field__error">{{ form.house_name.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="{{ form.phone.id_for_label }}">Phone number</label>
+      {{ form.phone }}
+      {% if form.phone.errors %}<p class="field__error">{{ form.phone.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="{{ form.maps_url.id_for_label }}">Google Maps link</label>
+      <div class="field__with-btn">
+        {{ form.maps_url }}
+        <button type="button" class="fetch-btn" id="fetch-coordinates-btn" aria-label="Fetch coordinates from link">
+          <span class="fetch-btn__spinner" id="fetch-coordinates-spinner" style="display:none;"></span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="fetch-coordinates-icon">
+            <path d="M21 12a9 9 0 1 1-3-6.7"/>
+            <path d="M21 3v6h-6"/>
+          </svg>
+        </button>
+      </div>
+      {% if form.maps_url.errors %}<p class="field__error">{{ form.maps_url.errors.0 }}</p>{% endif %}
+      <p class="field__status" id="maps-url-status"></p>
+      <p class="field__hint" id="coord-preview">{% block coord_preview_initial %}{% endblock %}</p>
+    </div>
+
+    {{ form.latitude }}
+    {{ form.longitude }}
+
+    <button type="button" class="locate-btn" id="use-current-location">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+      </svg>
+      Use current location
+    </button>
+
+    <button type="submit" class="save-btn">{% block submit_text %}Save{% endblock %}</button>
+  </form>
+
+  {% block extra_bottom %}{% endblock %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+  .chat-header__title{ font-size: 1.2rem; }
+  .field__with-btn{ display: flex; align-items: center; gap: 10px; }
+  .field__with-btn .field__input{ flex: 1; }
+
+  .fetch-btn{
+    flex-shrink: 0;
+    width: 34px; height: 34px; border-radius: 50%;
+    border: none; background: var(--wa-bg); color: var(--wa-green);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fetch-btn:active{ background: var(--wa-border); }
+  .fetch-btn:disabled{ opacity: 0.6; }
+
+  .fetch-btn__spinner{
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--wa-border); border-top-color: var(--wa-green);
+    animation: fetch-spin 0.7s linear infinite;
+  }
+  @keyframes fetch-spin{ to{ transform: rotate(360deg); } }
+  {% block extra_css_child %}{% endblock %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Live photo preview
+  const photoInput = document.getElementById("{{ form.photo.id_for_label }}");
+  const photoPreview = document.getElementById("photo-preview");
+  if (photoInput) {
+    photoInput.addEventListener("change", function () {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = e => { photoPreview.innerHTML = `<img src="${e.target.result}" alt="Preview">`; };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // Maps URL -> lat/lng
+  const mapsUrlInput = document.getElementById("id_maps_url");
+  const latInput = document.getElementById("id_latitude");
+  const lngInput = document.getElementById("id_longitude");
+  const preview = document.getElementById("coord-preview");
+
+  const COORD_PATTERNS = [
+    /!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/,
+    /\/place\/(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/,
+    /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+    /[?&]q=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+    /(-?\d{1,3}\.\d{3,}),\s*(-?\d{1,3}\.\d{3,})/,
+  ];
+
+  function parseCoords(url) {
+    for (const pattern of COORD_PATTERNS) {
+      const m = url.match(pattern);
+      if (m) {
+        const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+        if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) return [lat, lng];
+      }
+    }
+    return null;
+  }
+
+  if (mapsUrlInput) {
+    mapsUrlInput.addEventListener("input", function () {
+      const coords = parseCoords(this.value);
+      if (coords) {
+        latInput.value = coords[0];
+        lngInput.value = coords[1];
+        preview.textContent = `Detected: ${coords[0]}, ${coords[1]}`;
+      } else if (mapsUrlInput.value.trim() === "") {
+        preview.textContent = "{% block js_empty_message %}{% endblock %}";
+      } else {
+        preview.textContent = mapsUrlInput.value.includes("goo.gl")
+          ? "Shortened link — coordinates will be resolved on save."
+          : "";
+      }
+    });
+  }
+
+  const locateBtn = document.getElementById("use-current-location");
+  if (locateBtn) {
+    locateBtn.addEventListener("click", function () {
+      if (!navigator.geolocation) {
+        alert("Geolocation isn't supported on this device.");
+        return;
+      }
+      locateBtn.textContent = "Locating…";
+      navigator.geolocation.getCurrentPosition(
+        function (pos) {
+          const lat = pos.coords.latitude.toFixed(7);
+          const lng = pos.coords.longitude.toFixed(7);
+          mapsUrlInput.value = `https://www.google.com/maps/@${lat},${lng},17z`;
+          latInput.value = lat;
+          lngInput.value = lng;
+          preview.textContent = `Detected: ${lat}, ${lng}`;
+          locateBtn.textContent = "Location set";
+        },
+        function () {
+          alert("Couldn't get your location. You can paste a Maps link manually.");
+          locateBtn.textContent = "Use current location";
+        }
+      );
+    });
+  }
+
+  $(function () {
+    const $mapsUrl = $("#{{ form.maps_url.id_for_label }}");
+    const $status = $("#maps-url-status");
+    const $fetchBtn = $("#fetch-coordinates-btn");
+    const $spinner = $("#fetch-coordinates-spinner");
+    const $icon = $("#fetch-coordinates-icon");
+
+    function setLoading(isLoading) {
+      $fetchBtn.prop("disabled", isLoading);
+      $spinner.css("display", isLoading ? "inline-block" : "none");
+      $icon.css("display", isLoading ? "none" : "block");
+    }
+
+    function fetchCoordinates() {
+      const url = $mapsUrl.val().trim();
+      if (!url) {
+        $status.text("Paste a Google Maps link first.")
+          .addClass("field__status--error").removeClass("field__status--ok");
+        return;
+      }
+
+      setLoading(true);
+      $status.text("Fetching…").removeClass("field__status--ok field__status--error");
+
+      $.ajax({
+        url: "https://kbus.stackschools.com/pressman/",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ url: url }),
+        dataType: "json"
+      })
+        .done(function (data) {
+          $mapsUrl.val(data.url);
+          $status.text(`✓ Coordinates found.`).addClass("field__status--ok").removeClass("field__status--error");
+        })
+        .fail(function () {
+          $status.text("Couldn't check the link right now.")
+            .addClass("field__status--error").removeClass("field__status--ok");
+        })
+        .always(function () {
+          setLoading(false);
+        });
+    }
+
+    $fetchBtn.on("click", fetchCoordinates);
+  });
+  {% block extra_js_child %}{% endblock %}
+</script>
+{% endblock %}

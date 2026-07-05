@@ -8,6 +8,7 @@ class Location(models.Model):
     name = models.CharField(max_length=255)
     latitude = models.DecimalField(max_digits=10, decimal_places=7)
     longitude = models.DecimalField(max_digits=10, decimal_places=7)
+    # google_map_link = models.TextField(blank=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     house_name = models.CharField(max_length=255, blank=True, null=True)
     photo = models.ImageField(upload_to="locations/", blank=True, null=True)
