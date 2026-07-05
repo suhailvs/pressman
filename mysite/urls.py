@@ -9,4 +9,5 @@ urlpatterns = [
     path("locations/add/", views.location_create, name="location_add"),
     path("locations/<int:pk>/", views.location_detail, name="location_detail"),
     path("locations/<int:pk>/edit/", views.location_edit, name="location_edit"),
+    path("locations/map/", views.location_map, name="location_map"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

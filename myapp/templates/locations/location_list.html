@@ -11,6 +11,13 @@
   <header class="chat-header">
     <h1 class="chat-header__title">Locations</h1>
     <div class="chat-header__actions">
+      <a href="{% url 'location_map' %}" class="icon-btn" aria-label="View map">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+          <line x1="8" y1="2" x2="8" y2="18"/>
+          <line x1="16" y1="6" x2="16" y2="22"/>
+        </svg>
+      </a>
       <button class="icon-btn" type="button" aria-label="More options">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
           <circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/>
@@ -117,6 +124,14 @@
 {% block extra_css %}
   .chat-header__title{ font-size: 1.35rem; }
 
+  /* This page has a FAB that must stay visible without scrolling the whole
+     page — pin the shell to the viewport and let only the list scroll inside it. */
+  .chat-app{
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
   /* Search */
   .chat-search{ padding: 10px 12px; background: #fff; border-bottom: 1px solid var(--wa-border); }
   .chat-search__box{
@@ -180,13 +195,17 @@
   .chat-empty__title{ font-weight: 600; color: var(--wa-text); margin-bottom: 4px; }
   .chat-empty__text{ font-size: 0.9rem; margin: 0; }
 
-  /* FAB */
+  /* FAB — fixed to the actual viewport, not the app shell, so it can never
+     get clipped or pushed out of view by a parent's overflow/height rules */
   .fab{
-    position: absolute; right: 18px; bottom: 24px;
+    position: fixed;
+    right: max(18px, calc(50vw - 240px + 18px));
+    bottom: max(24px, calc(24px + env(safe-area-inset-bottom, 0px)));
     width: 56px; height: 56px; border-radius: 50%;
     background: var(--wa-accent); color: #fff; border: none;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 4px 12px rgba(0,0,0,0.2); text-decoration: none;
+    z-index: 50;
   }
   .fab:active{ background: var(--wa-green); }
 {% endblock %}

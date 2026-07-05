@@ -34,10 +34,11 @@ def location_create(request):
         if form.is_valid():
             location = form.save()
             messages.success(request, f'"{location.name}" was added.')
+            print('location added')
             return redirect("location_list")
     else:
         form = LocationForm()
-
+    print('location add error',form.errors)
     return render(request, "locations/add_location.html", {"form": form})
 
 
@@ -68,3 +69,7 @@ def location_edit(request, pk):
     return render(
         request, "locations/edit_location.html", {"form": form, "location": location}
     )
+
+def location_map(request):
+    locations = Location.objects.exclude(latitude__isnull=True).exclude(longitude__isnull=True)
+    return render(request, "locations/location_map.html", {"locations": locations})

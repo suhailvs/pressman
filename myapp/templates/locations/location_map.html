@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}All Locations{% endblock %}
+
+{% block content %}
+<div class="chat-app">
+
+  <!-- Top bar -->
+  <header class="chat-header">
+    <button class="icon-btn" type="button" onclick="window.history.back()" aria-label="Back">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+    <h1 class="chat-header__title">All Locations</h1>
+    <div class="chat-header__actions">
+      <span class="map-count-badge">{{ locations.count }}</span>
+    </div>
+  </header>
+
+  <!-- Map -->
+  <div class="map-wrap">
+    <div id="locations-map"></div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .chat-header__title{ font-size: 1.2rem; }
+
+  .map-count-badge{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--accent, #2563eb);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .map-wrap{
+    position: absolute;
+    top: var(--header-height, 56px);
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  #locations-map{
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Custom InfoWindow styling to match the chat-app card look */
+  .map-popup{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 180px;
+    font-family: inherit;
+  }
+
+  .map-popup__photo{
+    width: 100%;
+    height: 110px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-bottom: 4px;
+  }
+
+  .map-popup__name{
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .map-popup__detail{
+    font-size: 0.8rem;
+    color: var(--text-muted, #6b7280);
+  }
+
+  .map-popup__actions{
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .map-popup__actions a{
+    flex: 1;
+    text-align: center;
+    font-size: 0.8rem;
+    padding: 6px 8px;
+    border-radius: 8px;
+    text-decoration: none;
+    background: var(--surface-muted, #f3f4f6);
+    color: var(--text, #111827);
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const locationsData = [
+    {% for loc in locations %}
+    {
+      id: {{ loc.pk }},
+      name: "{{ loc.name|escapejs }}",
+      house_name: "{{ loc.house_name|escapejs }}",
+      phone: "{{ loc.phone|escapejs }}",
+      lat: {{ loc.latitude }},
+      lng: {{ loc.longitude }},
+      photo: "{% if loc.photo %}{{ loc.photo.url }}{% endif %}",
+      view_url: "{% url 'location_detail' loc.pk %}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  function initMap() {
+    const map = new google.maps.Map(document.getElementById("locations-map"), {
+      zoom: 12,
+      center: { lat: 10.604054, lng: 76.492245 }, // fallback center if no locations
+      mapId: "DEMO_MAP_ID",
+    });
+
+    if (locationsData.length === 0) return;
+
+    const bounds = new google.maps.LatLngBounds();
+    const infoWindow = new google.maps.InfoWindow();
+
+    locationsData.forEach(function (loc) {
+      const position = { lat: loc.lat, lng: loc.lng };
+      const marker = new google.maps.Marker({
+        position,
+        map,
+        title: loc.name,
+      });
+
+      let popupHtml = `<div class="map-popup">`;
+      if (loc.photo) {
+        popupHtml += `<img class="map-popup__photo" src="${loc.photo}" alt="${loc.name}">`;
+      }
+      popupHtml += `<div class="map-popup__name">${loc.name}</div>`;
+      if (loc.house_name) {
+        popupHtml += `<div class="map-popup__detail">${loc.house_name}</div>`;
+      }
+      if (loc.phone) {
+        popupHtml += `<div class="map-popup__detail">${loc.phone}</div>`;
+      }
+      popupHtml += `
+        <div class="map-popup__actions">
+          <a href="https://www.google.com/maps/@${loc.lat},${loc.lng},17z" target="_blank" rel="noopener">Open in Maps</a>
+          <a href="${loc.view_url}">View Details</a>
+        </div>
+      </div>`;
+
+      marker.addListener("click", function () {
+        infoWindow.setContent(popupHtml);
+        infoWindow.open(map, marker);
+      });
+
+      bounds.extend(position);
+    });
+
+    if (locationsData.length === 1) {
+      map.setCenter(locationsData[0].lat && { lat: locationsData[0].lat, lng: locationsData[0].lng });
+      map.setZoom(15);
+    } else {
+      map.fitBounds(bounds);
+    }
+  }
+</script>
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBwFTs8_ByftQEytonOPdVpdV9N0uyi3h4&callback=initMap&loading=async"
+  async
+  defer>
+</script>
+{% endblock %}
