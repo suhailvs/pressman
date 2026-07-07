@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Log in{% endblock %}
+
+{% block content %}
+<div class="container-fluid d-flex align-items-center justify-content-center login-bg" style="min-height: 100vh;">
+  <div class="card shadow-sm border-0 login-card">
+    <div class="card-body p-4 p-sm-5">
+
+      <div class="text-center mb-4">
+        <div class="login-logo mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z"/>
+            <circle cx="12" cy="10" r="2.5"/>
+          </svg>
+        </div>
+        <h1 class="h4 fw-semibold mb-1">Locations</h1>
+        <p class="text-muted small mb-0">Sign in to continue</p>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2 small" role="alert">
+          {{ form.non_field_errors.0 }}
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label for="{{ form.username.id_for_label }}" class="form-label small fw-semibold text-uppercase text-success">
+            Username
+          </label>
+          <input
+            type="text"
+            name="{{ form.username.html_name }}"
+            id="{{ form.username.id_for_label }}"
+            class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+            placeholder="Username"
+            autofocus
+            value="{{ form.username.value|default:'' }}">
+          {% if form.username.errors %}
+            <div class="invalid-feedback">{{ form.username.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-4">
+          <label for="{{ form.password.id_for_label }}" class="form-label small fw-semibold text-uppercase text-success">
+            Password
+          </label>
+          <div class="input-group">
+            <input
+              type="password"
+              name="{{ form.password.html_name }}"
+              id="{{ form.password.id_for_label }}"
+              class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+              placeholder="Password">
+            <button class="btn btn-outline-secondary" type="button" id="toggle-password" aria-label="Show password">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="eye-icon">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+            {% if form.password.errors %}
+              <div class="invalid-feedback">{{ form.password.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <input type="hidden" name="next" value="{{ next }}">
+
+        <button type="submit" class="btn btn-success w-100 py-2 fw-semibold rounded-pill">
+          Log in
+        </button>
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+  .login-bg{ background: var(--wa-bg); }
+  .login-card{ width: 100%; max-width: 380px; border-radius: 16px; }
+  .login-logo{
+    width: 64px; height: 64px;
+    background: var(--wa-green-dark); color: #fff;
+  }
+  /* Bring Bootstrap's default green in line with the app's palette */
+  .btn-success{ background-color: var(--wa-green); border-color: var(--wa-green); }
+  .btn-success:hover, .btn-success:active{ background-color: var(--wa-green-dark) !important; border-color: var(--wa-green-dark) !important; }
+  .text-success{ color: var(--wa-green) !important; }
+  .form-control:focus{ border-color: var(--wa-green); box-shadow: 0 0 0 0.2rem rgba(18, 140, 126, 0.15); }
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  $(function () {
+    const $password = $("#{{ form.password.id_for_label }}");
+    const $toggle = $("#toggle-password");
+
+    $toggle.on("click", function () {
+      const isHidden = $password.attr("type") === "password";
+      $password.attr("type", isHidden ? "text" : "password");
+      $toggle.attr("aria-label", isHidden ? "Hide password" : "Show password");
+    });
+  });
+</script>
+{% endblock %}

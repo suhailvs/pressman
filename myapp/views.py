@@ -1,15 +1,21 @@
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
-
+from django.contrib.auth.views import LoginView
 from .forms import LocationForm,OrderForm
 from .models import Location,Order
 
+from django.contrib.auth.decorators import login_required
 
+@login_required
 def home(request):
     locations = Location.objects.filter(is_active=True).order_by("-updated_at")
     return render(request, "locations/location_list.html", {"locations": locations})
 
+class LocationsLoginView(LoginView):
+    template_name = "locations/login.html"
+    redirect_authenticated_user = True
 
+@login_required
 def location_create(request):
     if request.method == "POST":
         form = LocationForm(request.POST, request.FILES)
@@ -21,7 +27,7 @@ def location_create(request):
         form = LocationForm()
     return render(request, "locations/add_location.html", {"form": form})
 
-
+@login_required
 def location_detail(request, pk):
     location = get_object_or_404(Location, pk=pk)
 
@@ -33,7 +39,7 @@ def location_detail(request, pk):
 
     return render(request, "locations/view_location.html", {"location": location})
 
-
+@login_required
 def location_edit(request, pk):
     location = get_object_or_404(Location, pk=pk)
 
@@ -50,7 +56,7 @@ def location_edit(request, pk):
         request, "locations/edit_location.html", {"form": form, "location": location}
     )
 
-
+@login_required
 def location_map(request):
     locations = (
         Location.objects.filter(is_active=True)
@@ -59,7 +65,7 @@ def location_map(request):
     )
     return render(request, "locations/location_map.html", {"locations": locations})
 
-
+@login_required
 def location_orders(request, pk):
     location = get_object_or_404(Location, pk=pk)
  
@@ -88,7 +94,7 @@ def location_orders(request, pk):
     })
     
     
-    
+@login_required
 def backup_media(request):
     import zipfile
     from datetime import datetime
