@@ -17,12 +17,27 @@ class Location(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
-class Order(models.Model):
-    location = models.ForeignKey('Location', on_delete=models.CASCADE, related_name='orders')
-    date = models.DateField()
+class Pickup(models.Model):
+    STATUS_PENDING = "pending"
+    STATUS_PICKED_UP = "picked_up"
+    STATUS_DELIVERED = "delivered"
+    STATUS_CANCELLED = "cancelled"
+ 
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_PICKED_UP, "Picked Up"),
+        (STATUS_DELIVERED, "Delivered"),
+        (STATUS_CANCELLED, "Cancelled"),
+    ]
+ 
+    location = models.ForeignKey("Location", on_delete=models.CASCADE, related_name="pickups")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    picked_up_at = models.DateField()
+    delivered_at = models.DateField(blank=True, null=True)
     note = models.TextField(blank=True)
-    photo = models.ImageField(upload_to="orders/", blank=True, null=True)
+    photo = models.ImageField(upload_to="pickups/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    updated_at = models.DateTimeField(auto_now=True)
+ 
     def __str__(self):
-        return f"Order #{self.pk} - {self.location.name} ({self.date})"
+        return f"{self.location.name} — {self.get_status_display()}"

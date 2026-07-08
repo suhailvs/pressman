@@ -2,14 +2,14 @@
 {% load static %}
 {% load thumbnail %}
 
-{% block title %}Orders — {{ location.name }}{% endblock %}
+{% block title %}Pickups — {{ location.name }}{% endblock %}
 
 {% block content %}
 <div class="chat-app">
 
   <!-- Top bar -->
   <header class="chat-header">
-    <h1 class="chat-header__title">Orders</h1>
+    <h1 class="chat-header__title">Pickups</h1>
     <div class="chat-header__actions">
       <a href="{% url 'location_list' %}" class="icon-btn" aria-label="Close">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -29,7 +29,7 @@
         type="search"
         id="search-input"
         class="chat-search__input"
-        placeholder="Search orders"
+        placeholder="Search pickups"
         autocomplete="off">
       <a href="#" id="search-clear" class="chat-search__clear" aria-label="Clear search" style="display:none;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -39,18 +39,20 @@
     </div>
   </div>
 
-  <!-- Order list -->
+  <!-- Pickup list -->
   <main class="chat-list" role="list">
-    {% for order in orders %}
+    {% for pickup in pickups %}
     <div class="chat-row"
          role="listitem"
          tabindex="0"
-         data-search="{{ order.date|date:'M j, Y' }} {{ order.note|default:'' }}">
+         data-search="{{ pickup.picked_up_at|date:'M j, Y' }} {{ pickup.get_status_display }} {{ pickup.note|default:'' }}"
+         onclick="window.location='{% url 'pickup_detail' pickup.pk %}'"
+         onkeydown="if(event.key==='Enter'){window.location='{% url 'pickup_detail' pickup.pk %}'}">
 
       <div class="chat-row__avatar-wrap">
-        {% if order.photo %}
-          {% thumbnail order.photo "100x100" crop="center" as im %}
-            <img src="{{ im.url }}" alt="Order from {{ order.date|date:'M j, Y' }}" class="chat-row__avatar">
+        {% if pickup.photo %}
+          {% thumbnail pickup.photo "100x100" crop="center" as im %}
+            <img src="{{ im.url }}" alt="Pickup from {{ pickup.picked_up_at|date:'M j, Y' }}" class="chat-row__avatar">
           {% empty %}
             <div class="chat-row__avatar chat-row__avatar--fallback">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -73,33 +75,36 @@
 
       <div class="chat-row__body">
         <div class="chat-row__top">
-          <span class="chat-row__name">{{ order.date|date:"M j, Y" }}</span>
-          <span class="chat-row__time">{{ order.created_at|date:"g:i A" }}</span>
+          <span class="chat-row__name">{{ pickup.picked_up_at|date:"M j, Y" }}</span>
+          <span class="status-badge status-badge--{{ pickup.status }}">{{ pickup.get_status_display }}</span>
         </div>
         <div class="chat-row__bottom">
           <span class="chat-row__preview">
-            {{ order.note|default:"No notes added"|truncatechars:42 }}
+            {{ pickup.note|default:"No notes added"|truncatechars:38 }}
           </span>
+          {% if pickup.delivered_at %}
+            <span class="chat-row__time">Delivered {{ pickup.delivered_at|date:"M j" }}</span>
+          {% endif %}
         </div>
       </div>
     </div>
     {% empty %}
     <div class="chat-empty">
-      <p class="chat-empty__title">No orders yet</p>
-      <p class="chat-empty__text">Orders for {{ location.name }} will show up here.</p>
+      <p class="chat-empty__title">No pickups yet</p>
+      <p class="chat-empty__text">Pickups for {{ location.name }} will show up here.</p>
     </div>
     {% endfor %}
 
-    {% if orders %}
+    {% if pickups %}
     <div class="chat-empty" id="no-results" style="display:none;">
       <p class="chat-empty__title">No matches</p>
-      <p class="chat-empty__text">Try a different date or note text.</p>
+      <p class="chat-empty__text">Try a different date, status, or note text.</p>
     </div>
     {% endif %}
   </main>
 
   <!-- Floating action button -->
-  <button type="button" class="fab" aria-label="Add new order" data-bs-toggle="modal" data-bs-target="#add-order-modal">
+  <button type="button" class="fab" aria-label="Add new pickup" data-bs-toggle="modal" data-bs-target="#add-pickup-modal">
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
       <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
     </svg>
@@ -121,24 +126,24 @@
       </svg>
       <span>Edit</span>
     </a>
-    <a href="{% url 'location_orders' location.pk %}" class="bottom-tabs__item bottom-tabs__item--active">
+    <a href="{% url 'location_pickups' location.pk %}" class="bottom-tabs__item bottom-tabs__item--active">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
         <path d="M3 6h18"/>
         <path d="M16 10a4 4 0 0 1-8 0"/>
       </svg>
-      <span>Orders</span>
+      <span>Pickups</span>
     </a>
   </nav>
 
-  <!-- Add Order modal -->
-  <div class="modal fade" id="add-order-modal" tabindex="-1" aria-labelledby="add-order-modal-label" aria-hidden="true">
+  <!-- Add Pickup modal -->
+  <div class="modal fade" id="add-pickup-modal" tabindex="-1" aria-labelledby="add-pickup-modal-label" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content wa-modal">
         <form method="post" enctype="multipart/form-data" novalidate>
           {% csrf_token %}
           <div class="modal-header wa-modal__header">
-            <h5 class="modal-title wa-modal__title" id="add-order-modal-label">New Order</h5>
+            <h5 class="modal-title wa-modal__title" id="add-pickup-modal-label">New Pickup</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
 
@@ -148,9 +153,22 @@
             {% endif %}
 
             <div class="field">
-              <label class="field__label" for="{{ form.date.id_for_label }}">Date</label>
-              {{ form.date }}
-              {% if form.date.errors %}<p class="field__error">{{ form.date.errors.0 }}</p>{% endif %}
+              <label class="field__label" for="{{ form.status.id_for_label }}">Status</label>
+              {{ form.status }}
+              {% if form.status.errors %}<p class="field__error">{{ form.status.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label class="field__label" for="{{ form.picked_up_at.id_for_label }}">Picked up on</label>
+                {{ form.picked_up_at }}
+                {% if form.picked_up_at.errors %}<p class="field__error">{{ form.picked_up_at.errors.0 }}</p>{% endif %}
+              </div>
+              <div class="field">
+                <label class="field__label" for="{{ form.delivered_at.id_for_label }}">Delivered on</label>
+                {{ form.delivered_at }}
+                {% if form.delivered_at.errors %}<p class="field__error">{{ form.delivered_at.errors.0 }}</p>{% endif %}
+              </div>
             </div>
 
             <div class="field">
@@ -168,7 +186,7 @@
 
           <div class="modal-footer wa-modal__footer">
             <button type="button" class="wa-btn wa-btn--secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="wa-btn wa-btn--primary">Save order</button>
+            <button type="submit" class="wa-btn wa-btn--primary">Save pickup</button>
           </div>
         </form>
       </div>
@@ -232,6 +250,16 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
 
+  /* Status badge */
+  .status-badge{
+    font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em;
+    padding: 3px 9px; border-radius: 12px; flex-shrink: 0; margin-left: 8px;
+  }
+  .status-badge--pending{ background: var(--wa-bg); color: var(--wa-text-muted); }
+  .status-badge--picked_up{ background: #E3F2FD; color: #1565C0; }
+  .status-badge--delivered{ background: #E3F6EC; color: var(--wa-green-dark); }
+  .status-badge--cancelled{ background: #FDEAEA; color: #D64545; }
+
   /* Empty state */
   .chat-empty{ text-align: center; padding: 60px 24px; color: var(--wa-text-muted); }
   .chat-empty__title{ font-weight: 600; color: var(--wa-text); margin-bottom: 4px; }
@@ -282,7 +310,7 @@
   }
   .fab:active{ background: var(--wa-green); }
 
-  /* Add Order modal — restyled to match the app's look rather than
+  /* Add Pickup modal — restyled to match the app's look rather than
      Bootstrap's default modal chrome */
   .wa-modal{ border: none; border-radius: 14px; overflow: hidden; }
   .wa-modal__header{ background: var(--wa-green-dark); border-bottom: none; padding: 16px 20px; }
@@ -338,8 +366,8 @@
 
     {% if show_add_modal %}
       // Validation failed on submit — reopen the modal so the errors are visible.
-      const addOrderModal = new bootstrap.Modal(document.getElementById("add-order-modal"));
-      addOrderModal.show();
+      const addPickupModal = new bootstrap.Modal(document.getElementById("add-pickup-modal"));
+      addPickupModal.show();
     {% endif %}
   });
 </script>

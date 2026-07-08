@@ -8,6 +8,11 @@
 
   <!-- Top bar -->
   <header class="chat-header">
+    <button class="icon-btn" type="button" onclick="window.history.back()" aria-label="Back">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
     <h1 class="chat-header__title">Location Info</h1>
     <div class="chat-header__actions">
       <a href="{% url 'location_list' %}" class="icon-btn" aria-label="Close">
@@ -108,7 +113,7 @@
   </div>
 
   <!-- Delete confirmation -->
-  <div class="modal" id="delete-modal">
+  <div class="confirm-modal" id="delete-modal">
     <div class="modal__box">
       <p class="modal__title">Delete "{{ location.name }}"?</p>
       <p class="modal__text">This can't be undone.</p>
@@ -137,13 +142,13 @@
       </svg>
       <span>Edit</span>
     </a>
-    <a href="{% url 'location_orders' location.pk %}" class="bottom-tabs__item">
+    <a href="{% url 'location_pickups' location.pk %}" class="bottom-tabs__item">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
         <path d="M3 6h18"/>
         <path d="M16 10a4 4 0 0 1-8 0"/>
       </svg>
-      <span>Orders</span>
+      <span>Pickups</span>
     </a>
   </nav>
 </div>
@@ -224,12 +229,15 @@
 
   .detail__meta{ font-size: 0.72rem; color: var(--wa-text-muted); text-align: center; padding: 18px 20px; margin: 0; }
 
-  /* Delete modal */
-  .modal{
+  /* Delete confirmation overlay (custom, not Bootstrap) — deliberately
+     named .confirm-modal instead of .modal so it can't collide with
+     Bootstrap's own .modal class/z-index if a Bootstrap modal is ever
+     added to this page. */
+  .confirm-modal{
     position: fixed; inset: 0; background: rgba(0,0,0,0.45);
-    display: none; align-items: center; justify-content: center; z-index: 50; padding: 20px;
+    display: none; align-items: center; justify-content: center; z-index: 1060; padding: 20px;
   }
-  .modal.is-open{ display: flex; }
+  .confirm-modal.is-open{ display: flex; }
   .modal__box{ background: #fff; border-radius: 12px; padding: 20px; width: 100%; max-width: 320px; }
   .modal__title{ font-weight: 600; color: var(--wa-text); margin: 0 0 4px; }
   .modal__text{ font-size: 0.85rem; color: var(--wa-text-muted); margin: 0 0 18px; }

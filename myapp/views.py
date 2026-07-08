@@ -1,8 +1,8 @@
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.contrib.auth.views import LoginView
-from .forms import LocationForm,OrderForm
-from .models import Location,Order
+from .forms import LocationForm,PickupForm
+from .models import Location,Pickup
 
 from django.contrib.auth.decorators import login_required
 
@@ -66,34 +66,69 @@ def location_map(request):
     return render(request, "locations/location_map.html", {"locations": locations})
 
 @login_required
-def location_orders(request, pk):
+def location_pickups(request, pk):
     location = get_object_or_404(Location, pk=pk)
  
     if request.method == "POST":
-        form = OrderForm(request.POST, request.FILES)
+        form = PickupForm(request.POST, request.FILES)
         if form.is_valid():
-            order = form.save(commit=False)
-            order.location = location
-            order.save()
-            messages.success(request, "Order added.")
-            return redirect("location_orders", pk=location.pk)
+            pickup = form.save(commit=False)
+            pickup.location = location
+            pickup.save()
+            messages.success(request, "Pickup added.")
+            return redirect("location_pickups", pk=location.pk)
         # Invalid: fall through and re-render the list with the modal
         # reopened so the person can see what needs fixing.
         show_add_modal = True
     else:
-        form = OrderForm()
+        form = PickupForm()
         show_add_modal = False
  
-    orders = location.orders.all().order_by("-date", "-created_at")
+    pickups = location.pickups.all().order_by("-picked_up_at", "-created_at")
  
-    return render(request, "locations/order_list.html", {
+    return render(request, "locations/pickup_list.html", {
         "location": location,
-        "orders": orders,
+        "pickups": pickups,
         "form": form,
         "show_add_modal": show_add_modal,
     })
-    
-    
+
+
+
+def pickup_detail(request, pk):
+    pickup = get_object_or_404(Pickup, pk=pk)
+ 
+    if request.method == "POST":
+        if request.POST.get("_method") == "delete":
+            location_pk = pickup.location.pk
+            pickup.delete()
+            messages.success(request, "Pickup deleted.")
+            return redirect("location_pickups", pk=location_pk)
+ 
+        # Otherwise: submission from the edit modal
+        form = PickupForm(request.POST, request.FILES, instance=pickup)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Pickup updated.")
+            return redirect("pickup_detail", pk=pickup.pk)
+        show_edit_modal = True
+    else:
+        form = PickupForm(instance=pickup)
+        show_edit_modal = False
+ 
+    return render(request, "locations/pickup_detail.html", {
+        "pickup": pickup,
+        "location": pickup.location,
+        "form": form,
+        "show_edit_modal": show_edit_modal,
+    })
+
+
+
+def all_pickups(request):
+    pickups = Pickup.objects.select_related("location").all().order_by("-picked_up_at", "-created_at")
+    return render(request, "locations/all_pickups.html", {"pickups": pickups})
+
 @login_required
 def backup_media(request):
     import zipfile

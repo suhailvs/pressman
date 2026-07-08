@@ -2,7 +2,7 @@ import re
 import requests
 from decimal import Decimal, ROUND_HALF_UP
 from django import forms
-from .models import Location,Order
+from .models import Location,Pickup
 
 
 class LocationForm(forms.ModelForm):
@@ -119,13 +119,19 @@ class LocationForm(forms.ModelForm):
 
         return cleaned_data
 
-
-class OrderForm(forms.ModelForm):
+class PickupForm(forms.ModelForm):
     class Meta:
-        model = Order
-        fields = ["date", "note", "photo"]
+        model = Pickup
+        fields = ["status", "picked_up_at", "delivered_at", "note", "photo"]
         widgets = {
-            "date": forms.DateInput(attrs={
+            "status": forms.Select(attrs={
+                "class": "field__input",
+            }),
+            "picked_up_at": forms.DateInput(attrs={
+                "class": "field__input",
+                "type": "date",
+            }),
+            "delivered_at": forms.DateInput(attrs={
                 "class": "field__input",
                 "type": "date",
             }),

@@ -2,42 +2,23 @@
 {% load static %}
 {% load thumbnail %}
 
-{% block title %}Locations{% endblock %}
+{% block title %}All Pickups{% endblock %}
 
 {% block content %}
 <div class="chat-app">
 
   <!-- Top bar -->
   <header class="chat-header">
-    <h1 class="chat-header__title">Locations</h1>
-    <div class="chat-header__actions">
-      <button class="icon-btn" type="button" aria-label="Search">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-      </button>
-      
-      <a href="{% url 'all_pickups' %}" class="icon-btn" aria-label="All pickups">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-          <path d="M3 6h18"/>
-          <path d="M16 10a4 4 0 0 1-8 0"/>
-        </svg>
-      </a>
-      <form method="post" action="{% url 'logout' %}" class="logout-form">
-        {% csrf_token %}
-        <button class="icon-btn" type="submit" aria-label="Log out">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <path d="M16 17l5-5-5-5"/>
-            <path d="M21 12H9"/>
-          </svg>
-        </button>
-      </form>
-    </div>
+    <a href="{% url 'location_list' %}" class="icon-btn" aria-label="Back to locations">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </a>
+    <h1 class="chat-header__title">All Pickups</h1>
+    <div class="chat-header__actions"></div>
   </header>
 
-  <!-- Search (client-side, filters the list below with no page reload) -->
+  <!-- Search (client-side, filters the list below) -->
   <div class="chat-search">
     <div class="chat-search__box">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -47,7 +28,7 @@
         type="search"
         id="search-input"
         class="chat-search__input"
-        placeholder="Search locations"
+        placeholder="Search pickups"
         autocomplete="off">
       <a href="#" id="search-clear" class="chat-search__clear" aria-label="Clear search" style="display:none;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -57,92 +38,72 @@
     </div>
   </div>
 
-  <!-- Location list -->
+  <!-- Pickup list -->
   <main class="chat-list" role="list">
-    {% for location in locations %}
+    {% for pickup in pickups %}
     <div class="chat-row"
          role="listitem"
          tabindex="0"
-         data-search="{{ location.name|default:'' }} {{ location.house_name|default:'' }} {{ location.phone|default:'' }}"
-         onclick="window.location='{% url 'location_detail' location.pk %}'"
-         onkeydown="if(event.key==='Enter'){window.location='{% url 'location_detail' location.pk %}'}">
+         data-search="{{ pickup.location.name }} {{ pickup.picked_up_at|date:'M j, Y' }} {{ pickup.get_status_display }} {{ pickup.note|default:'' }}"
+         onclick="window.location='{% url 'pickup_detail' pickup.pk %}'"
+         onkeydown="if(event.key==='Enter'){window.location='{% url 'pickup_detail' pickup.pk %}'}">
 
       <div class="chat-row__avatar-wrap">
-        {% if location.photo %}
-          {% thumbnail location.photo "100x100" crop="center" as im %}
-            <img src="{{ im.url }}" alt="{{ location.name }}" class="chat-row__avatar">
+        {% if pickup.photo %}
+          {% thumbnail pickup.photo "100x100" crop="center" as im %}
+            <img src="{{ im.url }}" alt="Pickup for {{ pickup.location.name }}" class="chat-row__avatar">
           {% empty %}
             <div class="chat-row__avatar chat-row__avatar--fallback">
-              {{ location.name|slice:":1"|upper }}
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                <path d="M3 6h18"/>
+                <path d="M16 10a4 4 0 0 1-8 0"/>
+              </svg>
             </div>
           {% endthumbnail %}
         {% else %}
           <div class="chat-row__avatar chat-row__avatar--fallback">
-            {{ location.name|slice:":1"|upper }}
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+              <path d="M3 6h18"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
           </div>
         {% endif %}
       </div>
 
       <div class="chat-row__body">
         <div class="chat-row__top">
-          <span class="chat-row__name">{{ location.name }}</span>
-          <span class="chat-row__time">{{ location.updated_at|date:"M j" }}</span>
+          <span class="chat-row__name">{{ pickup.location.name }}</span>
+          <span class="chat-row__time">{{ pickup.picked_up_at|date:"M j, Y" }}</span>
         </div>
         <div class="chat-row__bottom">
           <span class="chat-row__preview">
-            {% if location.house_name %}
-              {{ location.house_name|truncatechars:38 }}
-            {% elif location.phone %}
-              {{ location.phone }}
-            {% else %}
-              {{ location.latitude }}, {{ location.longitude }}
-            {% endif %}
+            {{ pickup.note|default:"No notes added"|truncatechars:34 }}
           </span>
-          {% if location.phone %}
-            <a href="tel:{{ location.phone }}" class="chat-row__call" aria-label="Call {{ location.name }}" onclick="event.stopPropagation()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.2 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V21c0 .6-.4 1-1 1C10.5 22 2 13.5 2 3c0-.6.4-1 1-1h4.5c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.2 1.1L6.6 10.8z"/>
-              </svg>
-            </a>
-          {% endif %}
+          <span class="status-badge status-badge--{{ pickup.status }}">{{ pickup.get_status_display }}</span>
         </div>
       </div>
     </div>
     {% empty %}
     <div class="chat-empty">
-      <p class="chat-empty__title">No locations yet</p>
-      <p class="chat-empty__text">Tap the + button to add your first location.</p>
+      <p class="chat-empty__title">No pickups yet</p>
+      <p class="chat-empty__text">Pickups added across all locations will show up here.</p>
     </div>
     {% endfor %}
 
-    {% if locations %}
+    {% if pickups %}
     <div class="chat-empty" id="no-results" style="display:none;">
       <p class="chat-empty__title">No matches</p>
-      <p class="chat-empty__text">Try a different name, phone number, or house detail.</p>
+      <p class="chat-empty__text">Try a different location, date, status, or note text.</p>
     </div>
     {% endif %}
   </main>
-
-  <!-- Floating action button -->
-  <a href="{% url 'location_add' %}" class="fab" aria-label="Add new location">
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-    </svg>
-  </a>
 </div>
 {% endblock %}
 
 {% block extra_css %}
   .chat-header__title{ font-size: 1.35rem; }
-  .logout-form{ display: inline-flex; margin: 0; }
-
-  /* This page has a FAB that must stay visible without scrolling the whole
-     page — pin the shell to the viewport and let only the list scroll inside it. */
-  .chat-app{
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-  }
 
   /* Search */
   .chat-search{ padding: 10px 12px; background: #fff; border-bottom: 1px solid var(--wa-border); }
@@ -181,6 +142,7 @@
     display: flex; align-items: center; justify-content: center;
     background: var(--wa-green); color: #fff; font-weight: 600; font-size: 1.1rem;
   }
+
   .chat-row__body{ flex: 1; min-width: 0; }
   .chat-row__top{ display: flex; justify-content: space-between; align-items: baseline; }
   .chat-row__name{
@@ -194,32 +156,21 @@
     font-size: 0.85rem; color: var(--wa-text-muted);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .chat-row__call{
-    display: flex; align-items: center; justify-content: center;
-    width: 28px; height: 28px; border-radius: 50%;
-    background: var(--wa-bg); color: var(--wa-green);
-    margin-left: 8px; flex-shrink: 0;
+
+  /* Status badge (shared look with per-location pickup list) */
+  .status-badge{
+    font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em;
+    padding: 3px 9px; border-radius: 12px; flex-shrink: 0; margin-left: 8px;
   }
-  .chat-row__call:active{ background: var(--wa-border); }
+  .status-badge--pending{ background: var(--wa-bg); color: var(--wa-text-muted); }
+  .status-badge--picked_up{ background: #E3F2FD; color: #1565C0; }
+  .status-badge--delivered{ background: #E3F6EC; color: var(--wa-green-dark); }
+  .status-badge--cancelled{ background: #FDEAEA; color: #D64545; }
 
   /* Empty state */
   .chat-empty{ text-align: center; padding: 60px 24px; color: var(--wa-text-muted); }
   .chat-empty__title{ font-weight: 600; color: var(--wa-text); margin-bottom: 4px; }
   .chat-empty__text{ font-size: 0.9rem; margin: 0; }
-
-  /* FAB — fixed to the actual viewport, not the app shell, so it can never
-     get clipped or pushed out of view by a parent's overflow/height rules */
-  .fab{
-    position: fixed;
-    right: max(18px, calc(50vw - 240px + 18px));
-    bottom: max(24px, calc(24px + env(safe-area-inset-bottom, 0px)));
-    width: 56px; height: 56px; border-radius: 50%;
-    background: var(--wa-accent); color: #fff; border: none;
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2); text-decoration: none;
-    z-index: 50;
-  }
-  .fab:active{ background: var(--wa-green); }
 {% endblock %}
 
 {% block extra_js %}
