@@ -75,7 +75,7 @@
 
       <div class="chat-row__body">
         <div class="chat-row__top">
-          <span class="chat-row__name">{{ pickup.picked_up_at|date:"M j, Y" }}</span>
+          <span class="chat-row__name">{{ pickup.picked_up_at|date:"M j, Y"|default:"New pickup — tap to fill in" }}</span>
           <span class="status-badge status-badge--{{ pickup.status }}">{{ pickup.get_status_display }}</span>
         </div>
         <div class="chat-row__bottom">
@@ -103,12 +103,16 @@
     {% endif %}
   </main>
 
-  <!-- Floating action button -->
-  <button type="button" class="fab" aria-label="Add new pickup" data-bs-toggle="modal" data-bs-target="#add-pickup-modal">
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-    </svg>
-  </button>
+  <!-- Floating action button — creates a blank pickup immediately and
+       takes you straight to its detail page to fill in the rest. -->
+  <form method="post" action="{% url 'quick_add_pickup' location.pk %}" class="fab-form">
+    {% csrf_token %}
+    <button type="submit" class="fab" aria-label="Add new pickup">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
+  </form>
 
   <!-- Bottom tabs -->
   <nav class="bottom-tabs">
@@ -135,63 +139,6 @@
       <span>Pickups</span>
     </a>
   </nav>
-
-  <!-- Add Pickup modal -->
-  <div class="modal fade" id="add-pickup-modal" tabindex="-1" aria-labelledby="add-pickup-modal-label" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content wa-modal">
-        <form method="post" enctype="multipart/form-data" novalidate>
-          {% csrf_token %}
-          <div class="modal-header wa-modal__header">
-            <h5 class="modal-title wa-modal__title" id="add-pickup-modal-label">New Pickup</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-
-          <div class="modal-body wa-modal__body">
-            {% if form.non_field_errors %}
-              <div class="alert-error">{{ form.non_field_errors }}</div>
-            {% endif %}
-
-            <div class="field">
-              <label class="field__label" for="{{ form.status.id_for_label }}">Status</label>
-              {{ form.status }}
-              {% if form.status.errors %}<p class="field__error">{{ form.status.errors.0 }}</p>{% endif %}
-            </div>
-
-            <div class="field-row">
-              <div class="field">
-                <label class="field__label" for="{{ form.picked_up_at.id_for_label }}">Picked up on</label>
-                {{ form.picked_up_at }}
-                {% if form.picked_up_at.errors %}<p class="field__error">{{ form.picked_up_at.errors.0 }}</p>{% endif %}
-              </div>
-              <div class="field">
-                <label class="field__label" for="{{ form.delivered_at.id_for_label }}">Delivered on</label>
-                {{ form.delivered_at }}
-                {% if form.delivered_at.errors %}<p class="field__error">{{ form.delivered_at.errors.0 }}</p>{% endif %}
-              </div>
-            </div>
-
-            <div class="field">
-              <label class="field__label" for="{{ form.note.id_for_label }}">Note</label>
-              {{ form.note }}
-              {% if form.note.errors %}<p class="field__error">{{ form.note.errors.0 }}</p>{% endif %}
-            </div>
-
-            <div class="field">
-              <label class="field__label" for="{{ form.photo.id_for_label }}">Photo</label>
-              {{ form.photo }}
-              {% if form.photo.errors %}<p class="field__error">{{ form.photo.errors.0 }}</p>{% endif %}
-            </div>
-          </div>
-
-          <div class="modal-footer wa-modal__footer">
-            <button type="button" class="wa-btn wa-btn--secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="wa-btn wa-btn--primary">Save pickup</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
 </div>
 {% endblock %}
 
@@ -309,27 +256,7 @@
     z-index: 45;
   }
   .fab:active{ background: var(--wa-green); }
-
-  /* Add Pickup modal — restyled to match the app's look rather than
-     Bootstrap's default modal chrome */
-  .wa-modal{ border: none; border-radius: 14px; overflow: hidden; }
-  .wa-modal__header{ background: var(--wa-green-dark); border-bottom: none; padding: 16px 20px; }
-  .wa-modal__title{ color: #fff; font-weight: 600; font-size: 1.1rem; }
-  .wa-modal__header .btn-close{ filter: invert(1) grayscale(100%) brightness(200%); opacity: 0.9; }
-  .wa-modal__body{ padding: 20px; }
-  .wa-modal__footer{ border-top: 1px solid var(--wa-border); padding: 14px 20px; }
-
-  .field__input--textarea{ resize: vertical; border: 1.5px solid var(--wa-border); border-radius: 8px; padding: 8px 10px; }
-  .field__hint{ font-size: 0.76rem; color: var(--wa-text-muted); margin: 6px 0 0; }
-
-  .wa-btn{
-    border: none; border-radius: 20px; padding: 9px 18px;
-    font-size: 0.9rem; font-weight: 600;
-  }
-  .wa-btn--primary{ background: var(--wa-green); color: #fff; }
-  .wa-btn--primary:active{ background: var(--wa-green-dark); }
-  .wa-btn--secondary{ background: var(--wa-bg); color: var(--wa-text-muted); }
-  .wa-btn--secondary:active{ background: var(--wa-border); }
+  .fab-form{ margin: 0; display: contents; }
 {% endblock %}
 
 {% block extra_js %}
@@ -363,12 +290,6 @@
       $input.val("").trigger("focus");
       applyFilter();
     });
-
-    {% if show_add_modal %}
-      // Validation failed on submit — reopen the modal so the errors are visible.
-      const addPickupModal = new bootstrap.Modal(document.getElementById("add-pickup-modal"));
-      addPickupModal.show();
-    {% endif %}
   });
 </script>
 {% endblock %}

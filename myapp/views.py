@@ -94,7 +94,7 @@ def location_pickups(request, pk):
     })
 
 
-
+@login_required
 def pickup_detail(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
  
@@ -124,10 +124,17 @@ def pickup_detail(request, pk):
     })
 
 
-
+@login_required
 def all_pickups(request):
     pickups = Pickup.objects.select_related("location").all().order_by("-picked_up_at", "-created_at")
     return render(request, "locations/all_pickups.html", {"pickups": pickups})
+
+@login_required
+def quick_add_pickup(request, pk):
+    location = get_object_or_404(Location, pk=pk)
+    pickup = Pickup.objects.create(location=location)
+    messages.success(request, "Pickup created.")
+    return redirect("pickup_detail", pk=pickup.pk)
 
 @login_required
 def backup_media(request):

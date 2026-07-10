@@ -146,15 +146,15 @@
         popupHtml += `<img class="map-popup__photo" src="${loc.photo}" alt="${loc.name}">`;
       }
       popupHtml += `<div class="map-popup__name">${loc.name}</div>`;
-      if (loc.house_name) {
+      if (loc.house_name && loc.house_name !== 'None') {
         popupHtml += `<div class="map-popup__detail">${loc.house_name}</div>`;
       }
-      if (loc.phone) {
+      if (loc.phone && loc.phone !== 'None') {
         popupHtml += `<div class="map-popup__detail">${loc.phone}</div>`;
       }
       popupHtml += `
         <div class="map-popup__actions">
-          <a href="https://www.google.com/maps/@${loc.lat},${loc.lng},17z" target="_blank" rel="noopener">Open in Maps</a>
+          <a href="https://www.google.com/maps?q=${loc.lat},${loc.lng}" target="_blank" rel="noopener">Open in Maps</a>
           <a href="${loc.view_url}">View Details</a>
         </div>
       </div>`;

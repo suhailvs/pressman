@@ -14,7 +14,7 @@ urlpatterns = [
     path("locations/<int:pk>/pickups/", views.location_pickups, name="location_pickups"),
     path("pickups/<int:pk>/", views.pickup_detail, name="pickup_detail"),
     path("pickups/", views.all_pickups, name="all_pickups"),
-    
+    path("locations/<int:pk>/pickups/quick-add/", views.quick_add_pickup, name="quick_add_pickup"),
     path("backup/", views.backup_media, name="backup_media"),
     
     path("login/", views.LocationsLoginView.as_view(), name="login"),

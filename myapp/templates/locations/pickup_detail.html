@@ -2,7 +2,7 @@
 {% load static %}
 {% load thumbnail %}
 
-{% block title %}Pickup — {{ pickup.picked_up_at|date:"M j, Y" }}{% endblock %}
+{% block title %}Pickup — {{ pickup.picked_up_at|date:"M j, Y"|default:"New" }}{% endblock %}
 
 {% block content %}
 <div class="chat-app">
@@ -41,7 +41,7 @@
           </svg>
         </div>
       {% endif %}
-      <h2 class="detail__name">{{ pickup.picked_up_at|date:"M j, Y" }}</h2>
+      <h2 class="detail__name">{{ pickup.picked_up_at|date:"M j, Y"|default:"New pickup" }}</h2>
       <span class="status-badge status-badge--{{ pickup.status }} mt-2">{{ pickup.get_status_display }}</span>
       <p class="detail__subtitle mt-2">{{ location.name }}</p>
     </div>
@@ -87,7 +87,7 @@
         </span>
         <div class="detail__row-body">
           <span class="detail__row-label">Picked up on</span>
-          <span class="detail__row-value">{{ pickup.picked_up_at|date:"l, M j, Y" }}</span>
+          <span class="detail__row-value">{{ pickup.picked_up_at|date:"l, M j, Y"|default:"Not set yet" }}</span>
         </div>
       </div>
 
