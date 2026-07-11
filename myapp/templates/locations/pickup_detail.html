@@ -9,14 +9,9 @@
 
   <!-- Top bar -->
   <header class="chat-header">
-    <button class="icon-btn" type="button" onclick="window.history.back()" aria-label="Back">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M15 18l-6-6 6-6"/>
-      </svg>
-    </button>
     <h1 class="chat-header__title">Pickup Info</h1>
     <div class="chat-header__actions">
-      <a href="{% url 'location_list' %}" class="icon-btn" aria-label="Close">
+      <a href="{% url 'all_pickups' %}" class="icon-btn" aria-label="Close">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
@@ -48,14 +43,14 @@
 
     <!-- Quick actions -->
     <div class="detail__actions">
-      <a href="{% url 'location_detail' location.pk %}" class="detail__action">
+      <a href="https://www.google.com/maps?q={{ location.latitude }},{{ location.longitude }}" target="_blank" rel="noopener" class="detail__action">
         <span class="detail__action-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z"/>
             <circle cx="12" cy="10" r="2.5"/>
           </svg>
         </span>
-        Location
+        Map
       </a>
       <button type="button" class="detail__action" data-bs-toggle="modal" data-bs-target="#edit-pickup-modal">
         <span class="detail__action-icon">
@@ -87,7 +82,7 @@
         </span>
         <div class="detail__row-body">
           <span class="detail__row-label">Picked up on</span>
-          <span class="detail__row-value">{{ pickup.picked_up_at|date:"l, M j, Y"|default:"Not set yet" }}</span>
+          <span class="detail__row-value">{{ pickup.picked_up_at|date:"l, M j, Y, g:i A"|default:"Not set yet" }}</span>
         </div>
       </div>
 
@@ -99,7 +94,7 @@
         </span>
         <div class="detail__row-body">
           <span class="detail__row-label">Delivered on</span>
-          <span class="detail__row-value">{{ pickup.delivered_at|date:"l, M j, Y"|default:"Not yet delivered" }}</span>
+          <span class="detail__row-value">{{ pickup.delivered_at|date:"l, M j, Y, g:i A"|default:"Not yet delivered" }}</span>
         </div>
       </div>
 

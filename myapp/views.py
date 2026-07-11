@@ -1,10 +1,14 @@
+import requests
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.contrib.auth.views import LoginView
+from django.utils import timezone
+from django.contrib.auth.decorators import login_required
+from django.urls import reverse
+
 from .forms import LocationForm,PickupForm
 from .models import Location,Pickup
 
-from django.contrib.auth.decorators import login_required
 
 @login_required
 def home(request):
@@ -103,7 +107,7 @@ def pickup_detail(request, pk):
             location_pk = pickup.location.pk
             pickup.delete()
             messages.success(request, "Pickup deleted.")
-            return redirect("location_pickups", pk=location_pk)
+            return redirect("all_pickups")
  
         # Otherwise: submission from the edit modal
         form = PickupForm(request.POST, request.FILES, instance=pickup)
@@ -133,8 +137,45 @@ def all_pickups(request):
 def quick_add_pickup(request, pk):
     location = get_object_or_404(Location, pk=pk)
     pickup = Pickup.objects.create(location=location)
+    # detail_url = request.build_absolute_uri(reverse("pickup_detail", kwargs={"pk": pickup.pk}))
+    # telegram bot see: https://github.com/suhailvs-archive/stack/blob/main/backend/api/views.py
+    TELEGRAM_BOT_TOKEN = "8574559583:AAG7tRjCSCbW4DkQx3P4a3X44Wp9Ba7RKB4"    
+    text = (
+        f"📦 *New Pickup Created*\n"
+        f"📍 *Location:* {location.name}\n"
+        f"🏠 {location.house_name or '—'}\n"        
+        f"🕐 {timezone.localtime(pickup.created_at).strftime('%b %d, %Y · %I:%M %p')}\n\n"
+        f"[View on GoogleMap](https://www.google.com/maps?q={ location.latitude },{ location.longitude })"
+        # f"[View pickup]({detail_url})"
+    ) 
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+            data={'chat_id':-5579934168, "text": text, "parse_mode": "Markdown", "disable_web_page_preview": True},
+            timeout=5,
+        )
+    except requests.RequestException:
+        pass
     messages.success(request, "Pickup created.")
-    return redirect("pickup_detail", pk=pickup.pk)
+    return redirect("all_pickups")
+
+@login_required
+def set_pickup_status(request, pk, status):
+    if status not in (Pickup.STATUS_PICKED_UP, Pickup.STATUS_DELIVERED):
+        return redirect(request.META.get("HTTP_REFERER", "all_pickups"))
+ 
+    pickup = get_object_or_404(Pickup, pk=pk)
+    pickup.status = status
+ 
+    now = timezone.now()
+    if status == Pickup.STATUS_PICKED_UP and not pickup.picked_up_at:
+        pickup.picked_up_at = now
+    elif status == Pickup.STATUS_DELIVERED and not pickup.delivered_at:
+        pickup.delivered_at = now
+ 
+    pickup.save()
+    messages.success(request, f"Marked as {pickup.get_status_display()}.")
+    return redirect(request.META.get("HTTP_REFERER", "all_pickups"))
 
 @login_required
 def backup_media(request):

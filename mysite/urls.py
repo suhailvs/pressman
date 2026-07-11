@@ -11,9 +11,9 @@ urlpatterns = [
     path("locations/<int:pk>/", views.location_detail, name="location_detail"),
     path("locations/<int:pk>/edit/", views.location_edit, name="location_edit"),
     path("locations/map/", views.location_map, name="location_map"),
-    path("locations/<int:pk>/pickups/", views.location_pickups, name="location_pickups"),
     path("pickups/<int:pk>/", views.pickup_detail, name="pickup_detail"),
     path("pickups/", views.all_pickups, name="all_pickups"),
+    path("pickups/<int:pk>/status/<str:status>/", views.set_pickup_status, name="set_pickup_status"),
     path("locations/<int:pk>/pickups/quick-add/", views.quick_add_pickup, name="quick_add_pickup"),
     path("backup/", views.backup_media, name="backup_media"),
     

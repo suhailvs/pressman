@@ -32,8 +32,8 @@ class Pickup(models.Model):
  
     location = models.ForeignKey("Location", on_delete=models.CASCADE, related_name="pickups")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
-    picked_up_at = models.DateField(blank=True, null=True)
-    delivered_at = models.DateField(blank=True, null=True)
+    picked_up_at = models.DateTimeField(blank=True, null=True)
+    delivered_at = models.DateTimeField(blank=True, null=True)
     note = models.TextField(blank=True)
     photo = models.ImageField(upload_to="pickups/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

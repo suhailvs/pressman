@@ -127,15 +127,52 @@
     }
     .save-btn:active{ background: var(--wa-green-dark); }
 
+    /* Django messages rendered as Bootstrap toasts */
+    .wa-toast-container{ z-index: 1080; bottom: max(16px, env(safe-area-inset-bottom, 0px)) !important; }
+    .wa-toast{
+      min-width: 260px; max-width: 90vw;
+      border-radius: 10px; overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      color: #fff;
+    }
+    .wa-toast .toast-body{ font-size: 0.9rem; font-weight: 500; }
+    .wa-toast .btn-close{ filter: invert(1) grayscale(100%) brightness(200%); opacity: 0.9; }
+    .wa-toast--success{ background: var(--wa-green); }
+    .wa-toast--error{ background: var(--wa-danger); }
+    .wa-toast--warning{ background: #B8860B; }
+    .wa-toast--info, .wa-toast--debug{ background: var(--wa-green-dark); }
+
     {% block extra_css %}{% endblock %}
   </style>
 </head>
 <body>
 
+  <!-- Django messages, rendered as auto-dismissing Bootstrap toasts -->
+  {% if messages %}
+    <div class="toast-container wa-toast-container position-fixed bottom-0 start-50 translate-middle-x p-3">
+      {% for message in messages %}
+        <div class="toast wa-toast wa-toast--{{ message.tags|default:'info' }}"
+             role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3500">
+          <div class="d-flex">
+            <div class="toast-body">{{ message }}</div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
   {% block content %}{% endblock %}
 
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll(".wa-toast").forEach(function (el) {
+        new bootstrap.Toast(el).show();
+      });
+    });
+  </script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

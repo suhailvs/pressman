@@ -8,11 +8,11 @@
 
   <!-- Top bar -->
   <header class="chat-header">
-    <button class="icon-btn" type="button" onclick="window.history.back()" aria-label="Back">
+    <!-- <button class="icon-btn" type="button" onclick="window.history.back()" aria-label="Back">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M15 18l-6-6 6-6"/>
       </svg>
-    </button>
+    </button> -->
     <h1 class="chat-header__title">Location Info</h1>
     <div class="chat-header__actions">
       <a href="{% url 'location_list' %}" class="icon-btn" aria-label="Close">
@@ -142,14 +142,15 @@
       </svg>
       <span>Edit</span>
     </a>
-    <a href="{% url 'location_pickups' location.pk %}" class="bottom-tabs__item">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-        <path d="M3 6h18"/>
-        <path d="M16 10a4 4 0 0 1-8 0"/>
-      </svg>
-      <span>Pickups</span>
-    </a>
+    <form method="post" action="{% url 'quick_add_pickup' location.pk %}" class="bottom-tabs__form">
+      {% csrf_token %}
+      <button type="submit" class="bottom-tabs__item">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>Add Pickup</span>
+      </button>
+    </form>
   </nav>
 </div>
 {% endblock %}
@@ -181,9 +182,11 @@
     color: var(--wa-text-muted);
     text-decoration: none;
     font-size: 0.72rem; font-weight: 600;
+    background: none; border: none; width: 100%;
   }
   .bottom-tabs__item--active{ color: var(--wa-green); }
   .bottom-tabs__item:active{ background: var(--wa-bg); }
+  .bottom-tabs__form{ flex: 1; margin: 0; display: flex; }
 
   /* Hero */
   .detail__hero{

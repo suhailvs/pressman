@@ -9,13 +9,14 @@
 
   <!-- Top bar -->
   <header class="chat-header">
-    <a href="{% url 'location_list' %}" class="icon-btn" aria-label="Back to locations">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M15 18l-6-6 6-6"/>
-      </svg>
-    </a>
     <h1 class="chat-header__title">All Pickups</h1>
-    <div class="chat-header__actions"></div>
+    <div class="chat-header__actions">
+      <a href="{% url 'location_list' %}" class="icon-btn" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </a>
+    </div>
   </header>
 
   <!-- Search (client-side, filters the list below) -->
@@ -84,6 +85,31 @@
           <span class="status-badge status-badge--{{ pickup.status }}">{{ pickup.get_status_display }}</span>
         </div>
       </div>
+
+      {% if pickup.status != 'delivered' %}
+      <div class="chat-row__quick-actions">
+        {% if pickup.status != 'picked_up' %}
+        <form method="post" action="{% url 'set_pickup_status' pickup.pk 'picked_up' %}" onclick="event.stopPropagation()">
+          {% csrf_token %}
+          <button type="submit" class="quick-btn quick-btn--picked" aria-label="Mark as picked up" title="Mark as picked up">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6 9 17l-5-5"/>
+            </svg>
+          </button>
+        </form>
+        {% endif %}
+        <form method="post" action="{% url 'set_pickup_status' pickup.pk 'delivered' %}" onclick="event.stopPropagation()">
+          {% csrf_token %}
+          <button type="submit" class="quick-btn quick-btn--delivered" aria-label="Mark as delivered" title="Mark as delivered">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+              <path d="M3 6h18"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+          </button>
+        </form>
+      </div>
+      {% endif %}
     </div>
     {% empty %}
     <div class="chat-empty">
@@ -156,6 +182,20 @@
     font-size: 0.85rem; color: var(--wa-text-muted);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+
+  /* Quick-action buttons: mark picked up / delivered without opening detail */
+  .chat-row__quick-actions{
+    display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; margin-left: 6px;
+  }
+  .chat-row__quick-actions form{ margin: 0; }
+  .quick-btn{
+    width: 28px; height: 28px; border-radius: 50%;
+    border: none; display: flex; align-items: center; justify-content: center;
+  }
+  .quick-btn--picked{ background: #E3F2FD; color: #1565C0; }
+  .quick-btn--picked:active{ background: #BBDEFB; }
+  .quick-btn--delivered{ background: #E3F6EC; color: var(--wa-green-dark); }
+  .quick-btn--delivered:active{ background: #C8ECD9; }
 
   /* Status badge (shared look with per-location pickup list) */
   .status-badge{

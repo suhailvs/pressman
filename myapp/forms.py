@@ -120,20 +120,28 @@ class LocationForm(forms.ModelForm):
         return cleaned_data
 
 class PickupForm(forms.ModelForm):
+    picked_up_at = forms.DateTimeField(
+        required=False,
+        input_formats=["%Y-%m-%dT%H:%M"],
+        widget=forms.DateTimeInput(attrs={
+            "class": "field__input",
+            "type": "datetime-local",
+        }, format="%Y-%m-%dT%H:%M"),
+    )
+    delivered_at = forms.DateTimeField(
+        required=False,
+        input_formats=["%Y-%m-%dT%H:%M"],
+        widget=forms.DateTimeInput(attrs={
+            "class": "field__input",
+            "type": "datetime-local",
+        }, format="%Y-%m-%dT%H:%M"),
+    )
     class Meta:
         model = Pickup
         fields = ["status", "picked_up_at", "delivered_at", "note", "photo"]
         widgets = {
             "status": forms.Select(attrs={
                 "class": "field__input",
-            }),
-            "picked_up_at": forms.DateInput(attrs={
-                "class": "field__input",
-                "type": "date",
-            }),
-            "delivered_at": forms.DateInput(attrs={
-                "class": "field__input",
-                "type": "date",
             }),
             "note": forms.Textarea(attrs={
                 "class": "field__input field__input--textarea",
