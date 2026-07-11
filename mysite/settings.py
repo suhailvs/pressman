@@ -46,6 +46,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "mysite" / "media"
+STATIC_ROOT = BASE_DIR / "mysite" / "static"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",

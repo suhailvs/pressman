@@ -3,6 +3,9 @@
 {% load thumbnail %}
 
 {% block title %}Locations{% endblock %}
+{% block manifest %}
+<link rel="manifest" href="{% static 'pwa/manifest.webmanifest' %}">
+{% endblock %}
 
 {% block content %}
 <div class="chat-app">
@@ -11,6 +14,13 @@
   <header class="chat-header">
     <h1 class="chat-header__title">Locations</h1>
     <div class="chat-header__actions">
+      <a href="#" class="add-button icon-btn" aria-label="Install app">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3v12"/>
+          <path d="M7 10l5 5 5-5"/>
+          <path d="M5 21h14"/>
+        </svg>
+      </a>
       <a href="{% url 'location_map' %}" class="icon-btn" aria-label="View map">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
@@ -226,6 +236,7 @@
 {% block extra_js %}
 <script>
   $(function () {
+    pwa(); // initialize PWA service worker and install prompt
     const $input = $("#search-input");
     const $clearBtn = $("#search-clear");
     const $noResults = $("#no-results");
@@ -255,5 +266,47 @@
       applyFilter();
     });
   });
+
+
+  function pwa() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('{% static "pwa/sw.js" %}')
+        .then(() => { console.log('Service Worker Registered'); });
+    }
+
+    // Code to handle install prompt on desktop
+
+    let deferredPrompt;
+    const addBtn = document.querySelector('.add-button');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent Chrome 67 and earlier from automatically showing the prompt
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      deferredPrompt = e;
+      // Update UI to notify the user they can add to home screen
+      addBtn.style.display = 'block';
+
+      addBtn.addEventListener('click', () => {
+        event.preventDefault();
+        // hide our user interface that shows our A2HS button
+        addBtn.style.display = 'none';
+        // Show the prompt
+        deferredPrompt.prompt();
+        // Wait for the user to respond to the prompt
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted the A2HS prompt');
+          } else {
+            console.log('User dismissed the A2HS prompt');
+          }
+          deferredPrompt = null;
+        });
+      });
+    });
+  }
+  
+
 </script>
 {% endblock %}
