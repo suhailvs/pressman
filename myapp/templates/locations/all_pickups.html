@@ -75,7 +75,7 @@
       <div class="chat-row__body">
         <div class="chat-row__top">
           <span class="chat-row__name">{{ pickup.location.name }}</span>
-          <span class="chat-row__time">{{ pickup.picked_up_at|date:"M j, Y"|default:"No date" }}</span>
+          <span class="chat-row__time">{{ pickup.created_at|date:"M j, g:i A" }}</span>
         </div>
         <div class="chat-row__bottom">
           <span class="chat-row__preview">

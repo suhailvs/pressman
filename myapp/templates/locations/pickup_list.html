@@ -82,9 +82,7 @@
           <span class="chat-row__preview">
             {{ pickup.note|default:"No notes added"|truncatechars:38 }}
           </span>
-          {% if pickup.delivered_at %}
-            <span class="chat-row__time">Delivered {{ pickup.delivered_at|date:"M j" }}</span>
-          {% endif %}
+          <span class="chat-row__time">{{ pickup.created_at|date:"M j, g:i A" }}</span>
         </div>
       </div>
     </div>
