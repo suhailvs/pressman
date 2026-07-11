@@ -126,7 +126,7 @@ def pickup_detail(request, pk):
 
 @login_required
 def all_pickups(request):
-    pickups = Pickup.objects.select_related("location").all().order_by("-picked_up_at", "-created_at")
+    pickups = Pickup.objects.select_related("location").all().order_by("-created_at")
     return render(request, "locations/all_pickups.html", {"pickups": pickups})
 
 @login_required
