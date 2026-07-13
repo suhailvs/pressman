@@ -1,0 +1,9 @@
+{
+  "background_color": "#128C7E",
+  "display": "fullscreen",
+  "icons": [{"src": "/static/pwa/fox-icon.png", "sizes": "192x192","type": "image/png"}],
+  "name": "Pressmen Laundry Service",
+  "short_name": "Pressmen",
+  "start_url": "/",
+  "share_target": {"action": "/locations/add/","method": "GET","params": {"title":"title","text": "text","url": "url"}}
+}
