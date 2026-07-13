@@ -39,6 +39,12 @@
     </div>
   </div>
 
+  <!-- Status filter: unticked shows pending only (default), ticked shows all -->
+  <label class="show-all-toggle">
+    <input type="checkbox" id="show-all-checkbox" {% if show_all %}checked{% endif %}>
+    Show all statuses
+  </label>
+
   <!-- Pickup list -->
   <main class="chat-list" role="list">
     {% for pickup in pickups %}
@@ -113,8 +119,13 @@
     </div>
     {% empty %}
     <div class="chat-empty">
-      <p class="chat-empty__title">No pickups yet</p>
-      <p class="chat-empty__text">Pickups added across all locations will show up here.</p>
+      {% if show_all %}
+        <p class="chat-empty__title">No pickups yet</p>
+        <p class="chat-empty__text">Pickups added across all locations will show up here.</p>
+      {% else %}
+        <p class="chat-empty__title">No pending pickups</p>
+        <p class="chat-empty__text">Tick "Show all statuses" to see picked up, delivered, or cancelled pickups too.</p>
+      {% endif %}
     </div>
     {% endfor %}
 
@@ -125,6 +136,40 @@
     </div>
     {% endif %}
   </main>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="pagination" aria-label="Pickup pages">
+    {% if page_obj.has_previous %}
+      <a href="?show_all={{ show_all|yesno:'1,0' }}&page={{ page_obj.previous_page_number }}" class="pagination__btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </a>
+    {% else %}
+      <span class="pagination__btn pagination__btn--disabled">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </span>
+    {% endif %}
+
+    <span class="pagination__label">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+      <a href="?show_all={{ show_all|yesno:'1,0' }}&page={{ page_obj.next_page_number }}" class="pagination__btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </a>
+    {% else %}
+      <span class="pagination__btn pagination__btn--disabled">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </span>
+    {% endif %}
+  </nav>
+  {% endif %}
 </div>
 {% endblock %}
 
@@ -147,6 +192,28 @@
     display: flex; align-items: center; justify-content: center;
     color: var(--wa-text-muted); flex-shrink: 0;
   }
+
+  /* Show all toggle */
+  .show-all-toggle{
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--wa-border);
+    font-size: 0.85rem; color: var(--wa-text-muted); cursor: pointer;
+  }
+  .show-all-toggle input{ accent-color: var(--wa-green); width: 16px; height: 16px; }
+
+  /* Pagination */
+  .pagination{
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    padding: 14px 16px; background: #fff; border-top: 1px solid var(--wa-border);
+  }
+  .pagination__label{ font-size: 0.82rem; color: var(--wa-text-muted); font-weight: 600; }
+  .pagination__btn{
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--wa-bg); color: var(--wa-green); text-decoration: none;
+  }
+  .pagination__btn:active{ background: var(--wa-border); }
+  .pagination__btn--disabled{ color: var(--wa-border); pointer-events: none; }
 
   /* List */
   .chat-list{ flex: 1; overflow-y: auto; }
@@ -244,6 +311,13 @@
       $input.val("").trigger("focus");
       applyFilter();
     });
+  });
+
+  document.getElementById("show-all-checkbox").addEventListener("change", function () {
+    const url = new URL(window.location.href);
+    url.searchParams.set("show_all", this.checked ? "1" : "0");
+    url.searchParams.delete("page"); // reset to page 1 when the filter changes
+    window.location.href = url.toString();
   });
 </script>
 {% endblock %}

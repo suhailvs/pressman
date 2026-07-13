@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.views import LoginView
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
-from django.urls import reverse
+from django.core.paginator import Paginator
 
 from .forms import LocationForm,PickupForm
 from .models import Location,Pickup
@@ -12,7 +12,7 @@ from .models import Location,Pickup
 
 @login_required
 def home(request):
-    locations = Location.objects.filter(is_active=True).order_by("-updated_at")
+    locations = Location.objects.filter(is_active=True).order_by("name")
     return render(request, "locations/location_list.html", {"locations": locations})
 
 class LocationsLoginView(LoginView):
@@ -62,11 +62,7 @@ def location_edit(request, pk):
 
 @login_required
 def location_map(request):
-    locations = (
-        Location.objects.filter(is_active=True)
-        .exclude(latitude__isnull=True)
-        .exclude(longitude__isnull=True)
-    )
+    locations = Location.objects.filter(is_active=True).exclude(latitude__isnull=True).exclude(longitude__isnull=True)
     return render(request, "locations/location_map.html", {"locations": locations})
 
 @login_required
@@ -81,14 +77,12 @@ def location_pickups(request, pk):
             pickup.save()
             messages.success(request, "Pickup added.")
             return redirect("location_pickups", pk=location.pk)
-        # Invalid: fall through and re-render the list with the modal
-        # reopened so the person can see what needs fixing.
         show_add_modal = True
     else:
         form = PickupForm()
         show_add_modal = False
  
-    pickups = location.pickups.all().order_by("-picked_up_at", "-created_at")
+    pickups = location.pickups.all().order_by("-created_at")
  
     return render(request, "locations/pickup_list.html", {
         "location": location,
@@ -130,8 +124,13 @@ def pickup_detail(request, pk):
 
 @login_required
 def all_pickups(request):
-    pickups = Pickup.objects.select_related("location").all().order_by("-created_at")
-    return render(request, "locations/all_pickups.html", {"pickups": pickups})
+    show_all = request.GET.get("show_all") == "1" 
+    pickups_qs = Pickup.objects.select_related("location").all().order_by("-created_at")
+    if not show_all:
+        pickups_qs = pickups_qs.exclude(status=Pickup.STATUS_DELIVERED) 
+    paginator = Paginator(pickups_qs, 50)
+    page_obj = paginator.get_page(request.GET.get("page")) 
+    return render(request, "locations/all_pickups.html", {"pickups": page_obj,"page_obj": page_obj,"show_all": show_all})
 
 @login_required
 def quick_add_pickup(request, pk):
