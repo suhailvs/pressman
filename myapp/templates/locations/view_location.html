@@ -28,7 +28,8 @@
     <!-- Photo + name -->
     <div class="detail__hero">
       {% if location.photo %}
-        <img src="{{ location.photo.url }}" alt="{{ location.name }}" class="detail__photo">
+        <img src="{{ location.photo.url }}" alt="{{ location.name }}" class="detail__photo"
+          role="button" tabindex="0" data-bs-toggle="modal" data-bs-target="#photo-preview-modal">
       {% else %}
         <div class="detail__photo detail__photo--fallback">{{ location.name|slice:":1"|upper }}</div>
       {% endif %}
@@ -126,6 +127,17 @@
     </div>
   </div>
 
+  <!-- Photo preview modal -->
+  {% if location.photo %}
+  <div class="modal fade" id="photo-preview-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content photo-preview-content">
+        <button type="button" class="btn-close photo-preview-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <img src="{{ location.photo.url }}" alt="{{ location.name }}" class="photo-preview-img">
+      </div>
+    </div>
+  </div>
+  {% endif %}
   <!-- Bottom tabs -->
   <nav class="bottom-tabs">
     <a href="{% url 'location_detail' location.pk %}" class="bottom-tabs__item bottom-tabs__item--active">
@@ -251,4 +263,12 @@
   }
   .modal__btn--danger{ color: var(--wa-danger); }
   .modal__btn:active{ background: var(--wa-bg); }
+  .detail__photo[role="button"]{ cursor: pointer; }
+
+  .photo-preview-content{ background: transparent; border: none; }
+  .photo-preview-img{ width: 100%; border-radius: 12px; }
+  .photo-preview-close{
+    position: absolute; top: -36px; right: 0;
+    filter: invert(1) grayscale(100%) brightness(200%);
+  }
 {% endblock %}
