@@ -3,7 +3,7 @@
 
 #### Termux Setup in Android
 
-Install missing build dependencies for Pillow:
+Install missing build dependencies for Pillow and download the backup:
 ```bash
 pkg update && pkg upgrade
 pkg install python clang make libjpeg-turbo zlib freetype libpng

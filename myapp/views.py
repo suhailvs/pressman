@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 
 from .forms import LocationForm,PickupForm
-from .models import Location,Pickup
+from .models import Location,Pickup, PickupItem, Item
 
 
 @login_required
@@ -92,7 +92,7 @@ def location_pickups(request, pk):
     })
 
 
-@login_required
+ 
 def pickup_detail(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
  
@@ -101,7 +101,7 @@ def pickup_detail(request, pk):
             location_pk = pickup.location.pk
             pickup.delete()
             messages.success(request, "Pickup deleted.")
-            return redirect("all_pickups")
+            return redirect("location_detail", pk=location_pk)
  
         # Otherwise: submission from the edit modal
         form = PickupForm(request.POST, request.FILES, instance=pickup)
@@ -119,8 +119,76 @@ def pickup_detail(request, pk):
         "location": pickup.location,
         "form": form,
         "show_edit_modal": show_edit_modal,
+        "all_items": Item.objects.all(),
+        "pickup_items": pickup.items.select_related("item").all(),
     })
+ 
+ 
+@login_required
+def add_pickup_items(request, pk):
+    pickup = get_object_or_404(Pickup, pk=pk)
+    item_names = request.POST.getlist("item_name")
+    categories = request.POST.getlist("item_category")
+    quantities = request.POST.getlist("quantity")
+    prices = request.POST.getlist("price")
 
+    created = 0
+    for raw_name, raw_category, raw_qty, raw_price in zip(item_names, categories, quantities, prices):
+        name = raw_name.strip()
+        if not name:
+            continue
+        category = raw_category if raw_category in (Item.CATEGORY_DRYCLEANING, Item.CATEGORY_IRONING) else Item.CATEGORY_DRYCLEANING
+        try:
+            quantity = max(1, int(raw_qty))
+        except (TypeError, ValueError):
+            quantity = 1
+
+        raw_price = (raw_price or "").strip()
+        if raw_price:
+            try:
+                price = int(raw_price)
+            except ValueError:
+                price = 0
+        else:
+            price = 0
+
+        item, _ = Item.objects.get_or_create(name=name, item_category=category, defaults={"price": price})
+        if not raw_price:
+            price = item.price
+        PickupItem.objects.create(pickup=pickup, item=item, quantity=quantity, price=price)
+        created += 1
+
+    if created:
+        messages.success(request, f"Added {created} item{'s' if created != 1 else ''}.")
+    else:
+        messages.error(request, "No items were entered.")
+
+    return redirect("pickup_detail", pk=pickup.pk)
+ 
+ 
+@login_required
+def remove_pickup_item(request, pk):
+    pickup_item = get_object_or_404(PickupItem, pk=pk)
+    pickup_pk = pickup_item.pickup.pk
+    pickup_item.delete()
+    messages.success(request, "Item removed.")
+    return redirect("pickup_detail", pk=pickup_pk)
+ 
+@login_required
+def mark_pickup_paid(request, pk):
+    pickup = get_object_or_404(Pickup, pk=pk)
+    if request.method == "POST":
+        method = request.POST.get("payment_method")
+        amount = (request.POST.get("amount") or "").strip()
+        if method in (Pickup.PAYMENT_UPI, Pickup.PAYMENT_CASH) and amount:
+            pickup.payment_method = method
+            pickup.amount_paid = amount
+            pickup.paid_at = timezone.now()
+            pickup.save()
+            messages.success(request, f"Marked paid via {pickup.get_payment_method_display()}.")
+        else:
+            messages.error(request, "Select a payment method and enter an amount.")
+    return redirect("pickup_detail", pk=pickup.pk)
 
 @login_required
 def all_pickups(request):
