@@ -91,19 +91,16 @@ def location_pickups(request, pk):
         "show_add_modal": show_add_modal,
     })
 
-
- 
 def pickup_detail(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
- 
+
     if request.method == "POST":
         if request.POST.get("_method") == "delete":
             location_pk = pickup.location.pk
             pickup.delete()
             messages.success(request, "Pickup deleted.")
             return redirect("location_detail", pk=location_pk)
- 
-        # Otherwise: submission from the edit modal
+
         form = PickupForm(request.POST, request.FILES, instance=pickup)
         if form.is_valid():
             form.save()
@@ -113,31 +110,32 @@ def pickup_detail(request, pk):
     else:
         form = PickupForm(instance=pickup)
         show_edit_modal = False
- 
+
     return render(request, "locations/pickup_detail.html", {
         "pickup": pickup,
         "location": pickup.location,
         "form": form,
         "show_edit_modal": show_edit_modal,
-        "all_items": Item.objects.all(),
+        "dry_items": Item.objects.filter(item_category=Item.CATEGORY_DRYCLEANING),
+        "iron_items": Item.objects.filter(item_category=Item.CATEGORY_IRONING),
         "pickup_items": pickup.items.select_related("item").all(),
     })
- 
  
 @login_required
 def add_pickup_items(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
     item_names = request.POST.getlist("item_name")
-    categories = request.POST.getlist("item_category")
     quantities = request.POST.getlist("quantity")
     prices = request.POST.getlist("price")
+    category = request.POST.get("item_category")
+    if category not in (Item.CATEGORY_DRYCLEANING, Item.CATEGORY_IRONING):
+        category = Item.CATEGORY_DRYCLEANING
 
     created = 0
-    for raw_name, raw_category, raw_qty, raw_price in zip(item_names, categories, quantities, prices):
-        name = raw_name.strip()
+    for raw_name, raw_qty, raw_price in zip(item_names, quantities, prices):
+        name = raw_name.strip().lower()
         if not name:
             continue
-        category = raw_category if raw_category in (Item.CATEGORY_DRYCLEANING, Item.CATEGORY_IRONING) else Item.CATEGORY_DRYCLEANING
         try:
             quantity = max(1, int(raw_qty))
         except (TypeError, ValueError):
@@ -180,14 +178,18 @@ def mark_pickup_paid(request, pk):
     if request.method == "POST":
         method = request.POST.get("payment_method")
         amount = (request.POST.get("amount") or "").strip()
-        if method in (Pickup.PAYMENT_UPI, Pickup.PAYMENT_CASH) and amount:
+        try:
+            amount = int(float(amount)) if amount else None
+        except ValueError:
+            amount = None
+        if method in (Pickup.PAYMENT_UPI, Pickup.PAYMENT_CASH) and amount is not None:
             pickup.payment_method = method
             pickup.amount_paid = amount
             pickup.paid_at = timezone.now()
             pickup.save()
             messages.success(request, f"Marked paid via {pickup.get_payment_method_display()}.")
         else:
-            messages.error(request, "Select a payment method and enter an amount.")
+            messages.error(request, "Select a payment method and enter a valid amount.")
     return redirect("pickup_detail", pk=pickup.pk)
 
 @login_required

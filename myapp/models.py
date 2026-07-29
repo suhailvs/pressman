@@ -45,7 +45,7 @@ class Pickup(models.Model):
     photo = models.ImageField(upload_to="pickups/", blank=True, null=True)
 
     payment_method = models.CharField(max_length=10, choices=PAYMENT_CHOICES, blank=True, null=True)
-    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    amount_paid = models.IntegerField(blank=True, null=True)
     paid_at = models.DateTimeField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)

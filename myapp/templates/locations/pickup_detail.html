@@ -144,12 +144,24 @@
     <div class="detail__section items-section">
       <div class="items-section__header">
         <span class="detail__row-label">Items ({{ pickup_items|length }})</span>
-        <button type="button" class="items-section__add" data-bs-toggle="modal" data-bs-target="#add-items-modal">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Add Items
-        </button>
+        <div class="items-section__add-group">
+          <button type="button" class="items-section__add items-section__add--iron"
+                  data-category="i" data-label="Ironing"
+                  data-bs-toggle="modal" data-bs-target="#add-items-modal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Ironing
+          </button>
+          <button type="button" class="items-section__add items-section__add--dry"
+                  data-category="d" data-label="Dry Cleaning"
+                  data-bs-toggle="modal" data-bs-target="#add-items-modal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Dry Cleaning
+          </button>
+        </div>
       </div>
 
       {% for pickup_item in pickup_items %}
@@ -214,8 +226,8 @@
 
             <div class="field">
               <label class="field__label" for="paid-amount">Amount</label>
-              <input type="number" step="0.01" min="0" id="paid-amount" name="amount"
-                     class="field__input" placeholder="0.00"
+              <input type="number" step="1" min="0" id="paid-amount" name="amount"
+                     class="field__input" placeholder="0"
                      value="{{ pickup.amount_paid|default:pickup.items_total }}">
             </div>
           </div>
@@ -235,6 +247,8 @@
       <div class="modal-content wa-modal">
         <form method="post" action="{% url 'add_pickup_items' pickup.pk %}" id="add-items-form">
           {% csrf_token %}
+          <input type="hidden" name="item_category" id="add-items-category" value="d">
+
           <div class="modal-header wa-modal__header">
             <h5 class="modal-title wa-modal__title" id="add-items-modal-label">Add Items</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -243,12 +257,8 @@
           <div class="modal-body wa-modal__body">
             <div id="item-rows">
               <div class="item-input-row">
-                <input type="text" name="item_name" class="field__input" placeholder="Item name" list="item-suggestions" autofocus>
-                <select name="item_category" class="field__input item-input-row__cat">
-                  <option value="d">Dry</option>
-                  <option value="i">Iron</option>
-                </select>
-                <input type="number" name="quantity" class="field__input item-input-row__qty" min="1" value="1">
+                <select name="item_name" class="field__input item-name-select"></select>
+                <input type="number" name="quantity" class="field__input item-input-row__qty" min="1" placeholder="Qty" value="">
                 <input type="number" name="price" class="field__input item-input-row__price" min="0" step="1" placeholder="Price">
                 <button type="button" class="item-input-row__remove" aria-label="Remove row">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
@@ -258,20 +268,16 @@
               </div>
             </div>
 
-            <datalist id="item-suggestions">
-              {% for catalog_item in all_items %}
-                <option value="{{ catalog_item.name }}">{{ catalog_item.get_item_category_display }} — ₹{{ catalog_item.price }}</option>
-              {% endfor %}
-            </datalist>
+            <p class="field__hint">Pick an item from the list — the price fills in automatically and can be adjusted.</p>
 
-            <p class="field__hint">Leave price blank to use the item's usual price. Pick a category — the same item name can have a different price for Drycleaning vs Ironing.</p>
-
-            <button type="button" class="locate-btn" id="add-item-row">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              Add another item
-            </button>
+            <div class="add-item-buttons">
+              <button type="button" class="locate-btn" id="add-item-row">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Add another item
+              </button>
+            </div>
           </div>
 
           <div class="modal-footer wa-modal__footer">
@@ -468,13 +474,19 @@
 
   /* Items section (on the page) */
   .items-section{ padding: 14px 20px; }
-  .items-section__header{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .items-section__header{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+  .items-section__add-group{ display: flex; gap: 6px; }
   .items-section__add{
     display: flex; align-items: center; gap: 4px;
     background: var(--wa-bg); color: var(--wa-green); border: none;
     border-radius: 14px; padding: 5px 12px; font-size: 0.78rem; font-weight: 600;
+    white-space: nowrap;
   }
   .items-section__add:active{ background: var(--wa-border); }
+  .items-section__add--iron{ color: #B8860B; }
+  .items-section__add--iron:active{ background: #FFF4E0; }
+  .items-section__add--dry{ color: #1565C0; }
+  .items-section__add--dry:active{ background: #E3F2FD; }
   .items-section__empty{ font-size: 0.85rem; color: var(--wa-text-muted); margin: 0; }
 
   .item-row{
@@ -509,7 +521,6 @@
   #item-rows{ display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
   .item-input-row{ display: flex; align-items: center; gap: 8px; }
   .item-input-row .field__input{ margin: 0; }
-  .item-input-row__cat{ width: 66px; flex-shrink: 0; padding: 8px 2px; }
   .item-input-row__qty{ width: 56px; flex-shrink: 0; text-align: center; }
   .item-input-row__price{ width: 72px; flex-shrink: 0; text-align: center; }
   .item-input-row__remove{
@@ -519,9 +530,26 @@
   }
   .item-input-row__remove:active{ background: #FDEAEA; color: var(--wa-danger); }
   .field__hint{ font-size: 0.76rem; color: var(--wa-text-muted); margin: 4px 0 14px; }
+
+  .add-item-buttons{ display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* Select2 — sized/styled to match .field__input */
+  .item-name-select{ flex: 1; min-width: 0; }
+  .select2-container{ flex: 1; min-width: 0; }
+  .select2-container .select2-selection--single{
+    height: 40px; border: 1.5px solid var(--wa-border); border-radius: 8px;
+    display: flex; align-items: center; padding: 0 8px;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__rendered{
+    line-height: normal; padding-left: 2px; color: var(--wa-text);
+  }
+  .select2-container--default .select2-selection--single .select2-selection__arrow{ height: 38px; }
 {% endblock %}
 
 {% block extra_js %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
   {% if show_edit_modal %}
     // Validation failed on submit — reopen the modal so the errors are visible.
@@ -531,32 +559,58 @@
     });
   {% endif %}
 
-  // Add Items modal: let the person add as many item rows as they need
-  // before submitting them all in one go.
   document.addEventListener("DOMContentLoaded", function () {
     const rowsContainer = document.getElementById("item-rows");
     const addRowBtn = document.getElementById("add-item-row");
+    const categoryInput = document.getElementById("add-items-category");
+    const modalTitle = document.getElementById("add-items-modal-label");
+    const addItemsModalEl = document.getElementById("add-items-modal");
 
-    // "name|category" -> price lookup, built from the catalog passed into
-    // this page, used to auto-fill price when a known item + category is
-    // typed/selected. The same name can map to two different prices
-    // depending on category (e.g. Shirt|d vs Shirt|i).
-    const itemPrices = {
-      {% for catalog_item in all_items %}
-        "{{ catalog_item.name|escapejs }}|{{ catalog_item.item_category }}": {{ catalog_item.price }},
-      {% endfor %}
+    // Per-category name -> price lookup, built from the catalogs passed
+    // into this page. This now also drives the Select2 dropdown options,
+    // so a row can only ever hold a real catalog item for the active
+    // category — there's no way to submit a name that doesn't exist.
+    const itemPricesByCategory = {
+      d: {
+        {% for catalog_item in dry_items %}
+          "{{ catalog_item.name|escapejs }}": {{ catalog_item.price }},
+        {% endfor %}
+      },
+      i: {
+        {% for catalog_item in iron_items %}
+          "{{ catalog_item.name|escapejs }}": {{ catalog_item.price }},
+        {% endfor %}
+      },
     };
+
+    function buildOptionsHtml(category) {
+      const items = itemPricesByCategory[category] || {};
+      let html = '<option value=""></option>';
+      Object.keys(items).forEach(function (name) {
+        html += '<option value="' + name + '" data-price="' + items[name] + '">' + name + '</option>';
+      });
+      return html;
+    }
+
+    // Wires up Select2 on a catalog row's <select>, restricted to the
+    // active category. tags:false (the default) means only options
+    // already in the list can be chosen — no free typing.
+    function initSelect2(select, category) {
+      select.innerHTML = buildOptionsHtml(category);
+      $(select).select2({
+        width: "100%",
+        placeholder: "Select item",
+        allowClear: true,
+        dropdownParent: $("#add-items-modal"),
+      });
+    }
 
     function makeRow() {
       const row = document.createElement("div");
       row.className = "item-input-row";
       row.innerHTML = `
-        <input type="text" name="item_name" class="field__input" placeholder="Item name" list="item-suggestions">
-        <select name="item_category" class="field__input item-input-row__cat">
-          <option value="d">Dry</option>
-          <option value="i">Iron</option>
-        </select>
-        <input type="number" name="quantity" class="field__input item-input-row__qty" min="1" value="1">
+        <select name="item_name" class="field__input item-name-select"></select>
+        <input type="number" name="quantity" class="field__input item-input-row__qty" min="1" placeholder="Qty" value="">
         <input type="number" name="price" class="field__input item-input-row__price" min="0" step="1" placeholder="Price">
         <button type="button" class="item-input-row__remove" aria-label="Remove row">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
@@ -564,56 +618,71 @@
           </svg>
         </button>
       `;
+      initSelect2(row.querySelector(".item-name-select"), categoryInput.value);
       return row;
     }
 
-    function tryAutoFillPrice(row) {
-      const name = row.querySelector('input[name="item_name"]').value;
-      const category = row.querySelector('select[name="item_category"]').value;
-      const priceInput = row.querySelector('input[name="price"]');
-      const match = itemPrices[`${name}|${category}`];
-      if (match !== undefined && !priceInput.value) {
-        priceInput.value = match;
-      }
-    }
+    // Seed the initial row with Select2.
+    const firstSelect = rowsContainer.querySelector(".item-name-select");
+    if (firstSelect) initSelect2(firstSelect, categoryInput.value);
 
     if (addRowBtn) {
       addRowBtn.addEventListener("click", function () {
         const row = makeRow();
         rowsContainer.appendChild(row);
-        row.querySelector('input[name="item_name"]').focus();
       });
     }
 
-    // Event delegation: handles the remove button on the original row too,
-    // not just ones added dynamically afterward.
     if (rowsContainer) {
       rowsContainer.addEventListener("click", function (e) {
         const removeBtn = e.target.closest(".item-input-row__remove");
         if (!removeBtn) return;
         const rows = rowsContainer.querySelectorAll(".item-input-row");
         if (rows.length > 1) {
-          removeBtn.closest(".item-input-row").remove();
+          const row = removeBtn.closest(".item-input-row");
+          const select = row.querySelector(".item-name-select");
+          if (select) $(select).select2("destroy");
+          row.remove();
         }
       });
 
-      // Auto-fill price when the typed/selected name (or category) matches
-      // a catalog item — only if the price field is still empty, so it
-      // never overwrites a price the person already typed themselves.
-      rowsContainer.addEventListener("input", function (e) {
-        if (!e.target.matches('input[name="item_name"]')) return;
-        tryAutoFillPrice(e.target.closest(".item-input-row"));
-      });
-      rowsContainer.addEventListener("change", function (e) {
-        if (!e.target.matches('select[name="item_category"]')) return;
-        tryAutoFillPrice(e.target.closest(".item-input-row"));
+      // Auto-fill the price whenever the Select2 item changes — always
+      // overwrites, so the price field stays in sync with the item
+      // that's currently selected.
+      $(rowsContainer).on("change", ".item-name-select", function () {
+        const row = this.closest(".item-input-row");
+        const priceInput = row.querySelector('input[name="price"]');
+        const selectedOption = this.options[this.selectedIndex];
+        const price = selectedOption ? selectedOption.getAttribute("data-price") : undefined;
+        priceInput.value = (price !== undefined && price !== "") ? price : "";
       });
     }
 
-    // Reset to a single blank row each time the modal is reopened.
-    const addItemsModalEl = document.getElementById("add-items-modal");
+    // The two "Ironing" / "Dry Cleaning" buttons set the modal's category
+    // and title before it opens (this click handler runs before Bootstrap's
+    // own delegated listener shows the modal, since it fires first during
+    // the bubble phase on the same element). Rebuild every row's Select2
+    // options for the new category.
+    document.querySelectorAll(".items-section__add").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const category = btn.dataset.category;
+        const label = btn.dataset.label;
+        categoryInput.value = category;
+        modalTitle.textContent = "Add " + label + " Items";
+        rowsContainer.querySelectorAll(".item-name-select").forEach(function (select) {
+          $(select).val(null);
+          select.innerHTML = buildOptionsHtml(category);
+          $(select).trigger("change.select2");
+        });
+      });
+    });
+
+    // Reset to a single blank catalog row each time the modal is closed.
     if (addItemsModalEl) {
       addItemsModalEl.addEventListener("hidden.bs.modal", function () {
+        rowsContainer.querySelectorAll(".item-name-select").forEach(function (select) {
+          $(select).select2("destroy");
+        });
         rowsContainer.innerHTML = "";
         rowsContainer.appendChild(makeRow());
       });
