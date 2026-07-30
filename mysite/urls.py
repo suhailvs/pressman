@@ -18,6 +18,7 @@ urlpatterns = [
     path("pickups/<int:pk>/paid/", views.mark_pickup_paid, name="mark_pickup_paid"),
     path("pickups/<int:pk>/items/add/", views.add_pickup_items, name="add_pickup_items"),
     path("pickup-items/<int:pk>/remove/", views.remove_pickup_item, name="remove_pickup_item"),
+    path("items/create/", views.create_item, name="create_item"),
     path("backup/", views.backup_media, name="backup_media"),
     
     path("login/", views.LocationsLoginView.as_view(), name="login"),

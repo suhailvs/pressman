@@ -1,3 +1,5 @@
+import re
+
 import requests
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
@@ -172,7 +174,19 @@ def remove_pickup_item(request, pk):
     pickup_item.delete()
     messages.success(request, "Item removed.")
     return redirect("pickup_detail", pk=pickup_pk)
- 
+
+@login_required
+def create_item(request):
+    pickup_pk = request.POST["pickup_pk"] # used to redirect back to the pickup detail page
+    name = re.sub(r"\s+","_",request.POST["name"].strip().lower())
+    category = request.POST["item_category"]
+    if Item.objects.filter( name=name, item_category=category).exists():
+        messages.error(request, "Item already exists.")
+        return redirect("pickup_detail", pk=pickup_pk)
+    Item.objects.create(name=name,item_category=category,price=int(request.POST["price"]))
+    messages.success(request, "Item created.")
+    return redirect("pickup_detail", pk=pickup_pk)
+
 @login_required
 def mark_pickup_paid(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)

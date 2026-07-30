@@ -268,8 +268,6 @@
               </div>
             </div>
 
-            <p class="field__hint">Pick an item from the list — the price fills in automatically and can be adjusted.</p>
-
             <div class="add-item-buttons">
               <button type="button" class="locate-btn" id="add-item-row">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -277,12 +275,54 @@
                 </svg>
                 Add another item
               </button>
+              <button type="button" class="locate-btn" data-bs-toggle="modal" data-bs-target="#new-item-modal">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                New Item
+              </button>
             </div>
           </div>
 
           <div class="modal-footer wa-modal__footer">
             <button type="button" class="wa-btn wa-btn--secondary" data-bs-dismiss="modal">Cancel</button>
             <button type="submit" class="wa-btn wa-btn--primary">Save items</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Item modal -->
+  <div class="modal fade" id="new-item-modal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content wa-modal">
+        <form method="post" action="{% url 'create_item' %}"> {% csrf_token %}
+          <input type="hidden" name="pickup_pk" value="{{ pickup.pk }}">
+          <input type="hidden" name="item_category" id="new-item-category">
+          <div class="modal-header wa-modal__header">
+            <h5 class="modal-title wa-modal__title">New Item</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body wa-modal__body">
+            <div class="field">
+              <label class="field__label">Name</label>
+              <input name="name" class="field__input" required>
+            </div>
+            <div class="field">
+              <label class="field__label">Price</label>
+              <input type="number" min="0" name="price" class="field__input" required>
+            </div>
+          </div>
+          <div class="modal-footer wa-modal__footer">
+            <button type="button" class="wa-btn wa-btn--secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button type="submit" class="wa-btn wa-btn--primary">
+              Save
+            </button>
           </div>
         </form>
       </div>
@@ -602,6 +642,19 @@
         placeholder: "Select item",
         allowClear: true,
         dropdownParent: $("#add-items-modal"),
+        templateResult: function(item) {
+            if (!item.id) return item.text;
+            const price = $(item.element).data("price");
+            return $(
+                '<div style="display:flex;justify-content:space-between;">' +
+                    '<span>' + item.text + '</span>' +
+                    '<span style="color:#666;">₹' + price + '</span>' +
+                '</div>'
+            );
+        },
+        templateSelection: function(item) {
+            return item.text;
+        }
       });
     }
 
@@ -668,6 +721,7 @@
         const category = btn.dataset.category;
         const label = btn.dataset.label;
         categoryInput.value = category;
+        document.getElementById("new-item-category").value = category;
         modalTitle.textContent = "Add " + label + " Items";
         rowsContainer.querySelectorAll(".item-name-select").forEach(function (select) {
           $(select).val(null);
