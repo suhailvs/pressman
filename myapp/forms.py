@@ -40,7 +40,7 @@ class LocationForm(forms.ModelForm):
             "photo": forms.ClearableFileInput(attrs={
                 "class": "field__file",
                 "accept": "image/*",
-                "capture": "environment",
+                # "capture": "environment",
             }),
         }
 
@@ -151,7 +151,7 @@ class PickupForm(forms.ModelForm):
             "photo": forms.ClearableFileInput(attrs={
                 "class": "field__file",
                 "accept": "image/*",
-                "capture": "environment",
+                # "capture": "environment",
             }),
         }
  
