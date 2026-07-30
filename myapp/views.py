@@ -40,8 +40,8 @@ def location_detail(request, pk):
         location.save()
         messages.success(request, f'"{location.name}" was deactivated.')
         return redirect("location_list")
-
-    return render(request, "locations/view_location.html", {"location": location})
+    pickups = location.pickups.all().order_by("-created_at")
+    return render(request, "locations/view_location.html", {"location": location,"pickups": pickups})
 
 @login_required
 def location_edit(request, pk):
@@ -91,6 +91,7 @@ def location_pickups(request, pk):
         "show_add_modal": show_add_modal,
     })
 
+@login_required
 def pickup_detail(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
 

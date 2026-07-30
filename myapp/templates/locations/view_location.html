@@ -41,6 +41,15 @@
 
     <!-- Quick actions -->
     <div class="detail__actions">
+      <button type="button" class="detail__action" data-bs-toggle="modal" data-bs-target="#pickups-modal">
+        <span class="detail__action-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <path d="M16 2v4M8 2v4M3 10h18"/>
+          </svg>
+        </span>
+        Pickups
+      </button>
       <a href="tel:{{ location.phone }}" class="detail__action {% if not location.phone %}detail__action--disabled{% endif %}">
         <span class="detail__action-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -111,6 +120,43 @@
     <p class="detail__meta">
       Added {{ location.created_at|date:"M j, Y, g:i A" }} · Updated {{ location.updated_at|date:"M j, Y, g:i A" }}
     </p>
+  </div>
+
+  <!-- Pickups list modal -->
+  <div class="modal fade" id="pickups-modal" tabindex="-1" aria-labelledby="pickups-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="pickups-modal-label">Pickups</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-0">
+          <div class="list-group list-group-flush">
+            {% for pickup in pickups %}
+              <a href="{% url 'pickup_detail' pickup.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <span>{{ pickup.created_at|date:"M j, Y, g:i A" }}</span>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge bg-primary">₹{{ pickup.items_total }}</span>
+                  {% if pickup.is_paid %}
+                      <span class="badge bg-success">
+                          {{ pickup.get_payment_method_display }} ₹{{ pickup.amount_paid }}
+                      </span>
+                  {% endif %}
+                  <span class="badge bg-secondary">{{ pickup.get_status_display }}</span>
+                </div>
+              </a>
+            {% empty %}
+              <p class="text-muted text-center my-3">No pickups yet for this location.</p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Delete confirmation -->
