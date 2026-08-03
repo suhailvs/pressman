@@ -142,6 +142,23 @@
     .wa-toast--warning{ background: #B8860B; }
     .wa-toast--info, .wa-toast--debug{ background: var(--wa-green-dark); }
 
+    /* Global loading state for any form's submit button, applied automatically
+       on submit — see the script at the bottom of this file. The spinner uses
+       currentColor, so it automatically matches whatever color that specific
+       button's text already is (green, white, grey, red, etc.) with no need
+       for per-button overrides. */
+    button.is-loading{ pointer-events: none; opacity: 0.85; }
+    .btn-spinner{
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: btn-spin 0.6s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes btn-spin{ to{ transform: rotate(360deg); } }
+
     {% block extra_css %}{% endblock %}
   </style>
   {% block manifest %}{% endblock %}
@@ -171,6 +188,33 @@
     document.addEventListener("DOMContentLoaded", function () {
       document.querySelectorAll(".wa-toast").forEach(function (el) {
         new bootstrap.Toast(el).show();
+      });
+    });
+
+    // Disable + show a spinner on a form's submit button the moment it's
+    // submitted, for every form on every page — prevents double-submits
+    // (double-tapping "Save", the quick-add-pickup button, etc.) and gives
+    // visual feedback while the request is in flight.
+    document.addEventListener("submit", function (e) {
+      const form = e.target;
+      if (!(form instanceof HTMLFormElement)) return;
+
+      const submitBtns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+      submitBtns.forEach(function (btn) {
+        if (btn.classList.contains("is-loading")) return; // already mid-submit
+
+        if (btn.tagName === "BUTTON") {
+          // Lock the button's current rendered width so swapping its content
+          // for a small spinner doesn't visibly shrink/reflow the layout.
+          btn.style.minWidth = btn.offsetWidth + "px";
+          btn.dataset.originalHtml = btn.innerHTML;
+          btn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span>';
+        }
+        // input[type="submit"] can't hold HTML, so just disable it — no
+        // spinner swap possible, but double-submit is still prevented.
+
+        btn.disabled = true;
+        btn.classList.add("is-loading");
       });
     });
   </script>
