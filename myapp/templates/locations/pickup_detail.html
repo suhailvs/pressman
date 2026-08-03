@@ -25,7 +25,8 @@
     <div class="detail__hero">
       {% if pickup.photo %}
         {% thumbnail pickup.photo "256x256" crop="center" as im %}
-          <img src="{{ im.url }}" alt="Pickup photo" class="detail__photo">
+          <img src="{{ im.url }}" alt="Pickup photo" class="detail__photo"
+               role="button" tabindex="0" data-bs-toggle="modal" data-bs-target="#photo-preview-modal">
         {% endthumbnail %}
       {% else %}
         <div class="detail__photo detail__photo--fallback">
@@ -399,6 +400,18 @@
       </div>
     </div>
   </div>
+
+  <!-- Photo preview modal -->
+  {% if pickup.photo %}
+  <div class="modal fade" id="photo-preview-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content photo-preview-content">
+        <button type="button" class="btn-close photo-preview-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <img src="{{ pickup.photo.url }}" alt="Pickup photo" class="photo-preview-img">
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
 
@@ -414,6 +427,7 @@
     width: 128px; height: 128px; border-radius: 16px;
     object-fit: cover; background: var(--wa-border);
   }
+  .detail__photo[role="button"]{ cursor: pointer; }
   .detail__photo--fallback{
     display: flex; align-items: center; justify-content: center;
     background: var(--wa-green); color: #fff;
@@ -584,6 +598,14 @@
     line-height: normal; padding-left: 2px; color: var(--wa-text);
   }
   .select2-container--default .select2-selection--single .select2-selection__arrow{ height: 38px; }
+
+  /* Photo preview modal */
+  .photo-preview-content{ background: transparent; border: none; }
+  .photo-preview-img{ width: 100%; border-radius: 12px; }
+  .photo-preview-close{
+    position: absolute; top: -36px; right: 0;
+    filter: invert(1) grayscale(100%) brightness(200%);
+  }
 {% endblock %}
 
 {% block extra_js %}

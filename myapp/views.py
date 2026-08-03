@@ -42,7 +42,7 @@ def location_detail(request, pk):
         location.save()
         messages.success(request, f'"{location.name}" was deactivated.')
         return redirect("location_list")
-    pickups = location.pickups.all().order_by("-created_at")
+    pickups = location.pickups.exclude(status=Pickup.STATUS_CANCELLED).order_by("-created_at")
     return render(request, "locations/view_location.html", {"location": location,"pickups": pickups})
 
 @login_required
@@ -68,41 +68,16 @@ def location_map(request):
     return render(request, "locations/location_map.html", {"locations": locations})
 
 @login_required
-def location_pickups(request, pk):
-    location = get_object_or_404(Location, pk=pk)
- 
-    if request.method == "POST":
-        form = PickupForm(request.POST, request.FILES)
-        if form.is_valid():
-            pickup = form.save(commit=False)
-            pickup.location = location
-            pickup.save()
-            messages.success(request, "Pickup added.")
-            return redirect("location_pickups", pk=location.pk)
-        show_add_modal = True
-    else:
-        form = PickupForm()
-        show_add_modal = False
- 
-    pickups = location.pickups.all().order_by("-created_at")
- 
-    return render(request, "locations/pickup_list.html", {
-        "location": location,
-        "pickups": pickups,
-        "form": form,
-        "show_add_modal": show_add_modal,
-    })
-
-@login_required
 def pickup_detail(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
 
     if request.method == "POST":
         if request.POST.get("_method") == "delete":
             location_pk = pickup.location.pk
-            pickup.delete()
-            messages.success(request, "Pickup deleted.")
-            return redirect("location_detail", pk=location_pk)
+            pickup.status=Pickup.STATUS_CANCELLED
+            pickup.save()
+            messages.success(request, "Pickup cancelled.")
+            return redirect("all_pickups")
 
         form = PickupForm(request.POST, request.FILES, instance=pickup)
         if form.is_valid():
@@ -210,7 +185,7 @@ def mark_pickup_paid(request, pk):
 @login_required
 def all_pickups(request):
     show_all = request.GET.get("show_all") == "1" 
-    pickups_qs = Pickup.objects.select_related("location").all().order_by("-created_at")
+    pickups_qs = Pickup.objects.select_related("location").exclude(status=Pickup.STATUS_CANCELLED).order_by("-created_at")
     if not show_all:
         pickups_qs = pickups_qs.exclude(status=Pickup.STATUS_DELIVERED) 
     paginator = Paginator(pickups_qs, 50)
