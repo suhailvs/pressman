@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ employee.name }}{% endblock %}
+
+{% block extra_css %}
+  .sd-hero{
+    background: #fff;
+    padding: 20px 16px;
+    border-bottom: 1px solid var(--wa-border);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .sd-avatar{
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--wa-accent);
+    color: #fff; font-weight: 700; font-size: 1.4rem;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .sd-hero__name{ font-size: 1.15rem; font-weight: 700; color: var(--wa-text); margin: 0; }
+  .sd-hero__wage{ font-size: 0.85rem; color: var(--wa-text-muted); margin: 2px 0 0; }
+
+  .sd-month-nav{
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: #fff; border-bottom: 1px solid var(--wa-border);
+  }
+  .sd-month-nav__label{ font-weight: 700; font-size: 0.95rem; color: var(--wa-text); }
+  .sd-month-nav a{
+    color: var(--wa-accent); text-decoration: none;
+    padding: 6px 10px; font-size: 0.85rem; font-weight: 600;
+  }
+
+  .sd-summary{
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1px; background: var(--wa-border);
+    margin: 10px 0;
+  }
+  .sd-summary__card{
+    background: #fff; padding: 14px 16px;
+  }
+  .sd-summary__label{ font-size: 0.75rem; color: var(--wa-text-muted); margin: 0; text-transform: uppercase; letter-spacing: 0.03em; }
+  .sd-summary__value{ font-size: 1.2rem; font-weight: 700; color: var(--wa-text); margin: 4px 0 0; }
+  .sd-summary__value--green{ color: var(--wa-green); }
+  .sd-summary__value--amber{ color: #B8860B; }
+
+  .sd-net-band{
+    background: var(--wa-accent); color: #fff;
+    padding: 16px; margin: 10px 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .sd-net-band__label{ font-size: 0.85rem; opacity: 0.9; margin: 0; }
+  .sd-net-band__value{ font-size: 1.5rem; font-weight: 800; margin: 2px 0 0; }
+
+  .sd-section-label{
+    padding: 14px 16px 6px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
+    color: var(--wa-text-muted); text-transform: uppercase;
+    background: #fff;
+  }
+
+  .sd-calendar{
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 6px; padding: 10px 16px 16px; background: #fff;
+  }
+  .sd-day{
+    aspect-ratio: 1; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; font-weight: 600; color: var(--wa-text);
+    background: var(--wa-bg);
+    position: relative;
+  }
+  .sd-day--full{ background: #E4F5EE; color: var(--wa-green); }
+  .sd-day--half{ background: #FDF0DA; color: #B8860B; }
+  .sd-day--today{ box-shadow: inset 0 0 0 2px var(--wa-accent); }
+  .sd-day--future{ color: var(--wa-text-muted); opacity: 0.4; }
+
+  .sd-day-head{
+    font-size: 0.7rem; font-weight: 700; color: var(--wa-text-muted);
+    text-align: center; padding-bottom: 2px;
+  }
+  .sd-day--blank{ background: transparent; }
+
+  .adv-row{
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: #fff; border-bottom: 1px solid var(--wa-border);
+  }
+  .adv-row__note{ font-size: 0.9rem; color: var(--wa-text); margin: 0; }
+  .adv-row__date{ font-size: 0.78rem; color: var(--wa-text-muted); margin: 2px 0 0; }
+  .adv-row__amount{ font-weight: 700; color: var(--wa-text); font-size: 0.95rem; }
+  .adv-badge{
+    font-size: 0.7rem; font-weight: 600; padding: 3px 8px; border-radius: 10px;
+    margin-left: 8px; vertical-align: middle;
+  }
+  .adv-badge--pending{ background: var(--wa-border); color: var(--wa-text-muted); }
+  .adv-badge--approved{ background: #E4F5EE; color: var(--wa-green); }
+
+  .sd-empty{ padding: 24px 16px; text-align: center; color: var(--wa-text-muted); font-size: 0.9rem; }
+{% endblock %}
+
+{% block content %}
+<div class="chat-app">
+
+  <header class="chat-header">
+    <h1 class="chat-header__title">{{ employee.name }}</h1>
+    <div class="chat-header__actions">
+        <a href="{% url 'staff_list' %}" class="icon-btn" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        </a>
+    </div>
+  </header>
+
+  <div class="sd-hero">
+    <div class="sd-avatar">{{ employee.name|first|upper }}</div>
+    <div>
+      <p class="sd-hero__name">{{ employee.name }}</p>
+      <p class="sd-hero__wage">&#8377;{{ employee.daily_wage }}/day &middot; {% if employee.is_active %}Active{% else %}Inactive{% endif %}</p>
+    </div>
+  </div>
+
+  <div class="sd-month-nav">
+    <a href="?year={{ prev_year }}&month={{ prev_month }}">&larr; Prev</a>
+    <span class="sd-month-nav__label">{{ month_label }}</span>
+    {% if is_current_month %}
+      <span style="width:52px;"></span>
+    {% else %}
+      <a href="?year={{ next_year }}&month={{ next_month }}">Next &rarr;</a>
+    {% endif %}
+  </div>
+
+  <div class="sd-summary">
+    <div class="sd-summary__card">
+      <p class="sd-summary__label">Full days</p>
+      <p class="sd-summary__value">{{ full_days }}</p>
+    </div>
+    <div class="sd-summary__card">
+      <p class="sd-summary__label">Half days</p>
+      <p class="sd-summary__value">{{ half_days }}</p>
+    </div>
+    <div class="sd-summary__card">
+      <p class="sd-summary__label">Earned</p>
+      <p class="sd-summary__value sd-summary__value--green">&#8377;{{ earned }}</p>
+    </div>
+    <div class="sd-summary__card">
+      <p class="sd-summary__label">Advances taken</p>
+      <p class="sd-summary__value sd-summary__value--amber">&#8377;{{ total_advance }}</p>
+    </div>
+  </div>
+
+  {% if pending_advance %}
+    <div style="padding: 0 16px 10px;">
+      <p style="font-size:0.82rem; color:#B8860B; margin:0;">
+        &#8377;{{ pending_advance }} of this is still awaiting approval.
+      </p>
+    </div>
+  {% endif %}
+
+  <div class="sd-net-band">
+    <div>
+      <p class="sd-net-band__label">Net payable this month</p>
+      <p class="sd-net-band__value">&#8377;{{ net }}</p>
+    </div>
+  </div>
+
+  <div class="sd-section-label">Attendance</div>
+  <div class="sd-calendar">
+    <div class="sd-day-head">Su</div>
+    <div class="sd-day-head">Mo</div>
+    <div class="sd-day-head">Tu</div>
+    <div class="sd-day-head">We</div>
+    <div class="sd-day-head">Th</div>
+    <div class="sd-day-head">Fr</div>
+    <div class="sd-day-head">Sa</div>
+
+    {% for d in calendar_days %}
+      {% if d is None %}
+        <div class="sd-day sd-day--blank"></div>
+      {% else %}
+        <div class="sd-day
+          {% if d.status == 'full' %}sd-day--full{% elif d.status == 'half' %}sd-day--half{% endif %}
+          {% if d.is_today %}sd-day--today{% endif %}
+          {% if d.is_future %}sd-day--future{% endif %}">
+          {{ d.day }}
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="sd-section-label">Advances</div>
+  {% for a in advances %}
+    <div class="adv-row">
+      <div>
+        <p class="adv-row__note">
+          {{ a.note|default:"Advance" }}
+          {% if a.approved %}
+            <span class="adv-badge adv-badge--approved">Approved</span>
+          {% else %}
+            <span class="adv-badge adv-badge--pending">Pending</span>
+          {% endif %}
+        </p>
+        <p class="adv-row__date">{{ a.date|date:"j M" }}</p>
+      </div>
+      <div class="adv-row__amount">&#8377;{{ a.amount }}</div>
+    </div>
+  {% empty %}
+    <div class="sd-empty">No advances recorded this month.</div>
+  {% endfor %}
+
+</div>
+{% endblock %}

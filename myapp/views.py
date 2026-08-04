@@ -1,5 +1,5 @@
 import re
-
+import calendar
 import requests
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
@@ -7,10 +7,11 @@ from django.contrib.auth.views import LoginView
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db.models import Sum
+from datetime import date,time
 
 from .forms import LocationForm,PickupForm
-from .models import Location,Pickup, PickupItem, Item
-
+from .models import Location,Pickup, PickupItem, Item, Employee, Attendance, Advance
 
 @login_required
 def home(request):
@@ -236,7 +237,180 @@ def set_pickup_status(request, pk, status):
     messages.success(request, f"Marked as {pickup.get_status_display()}.")
     return redirect(request.META.get("HTTP_REFERER", "all_pickups"))
 
-# @login_required
+
+# Cycled avatar colors so each employee gets a stable-ish color by id.
+AVATAR_COLORS = ['#128C7E', '#3A7CA5', '#C0533A', '#6B4FA8', '#B8860B', '#4C7A3D']
+ 
+ 
+def _avatar_color(employee_id):
+    return AVATAR_COLORS[employee_id % len(AVATAR_COLORS)]
+ 
+@login_required 
+def staff_list(request):
+    today = timezone.localdate()
+    employees = Employee.objects.filter(is_active=True).order_by('name')
+ 
+    todays_attendance = {
+        a.employee_id: a
+        for a in Attendance.objects.filter(employee__in=employees, date=today)
+    }
+ 
+    staff_today = []
+    for emp in employees:
+        att = todays_attendance.get(emp.id)
+        staff_today.append({
+            'id': emp.id,
+            'name': emp.name,
+            'color': _avatar_color(emp.id),
+            'marked_time': timezone.localtime(att.marked_at).strftime('%-I:%M %p') if att else None,
+            'status': att.day_type if att else 'pending',
+        })
+ 
+    month_start = today.replace(day=1)
+    month_attendance = Attendance.objects.filter(
+        employee__in=employees, date__gte=month_start, date__lte=today,
+    )
+    month_advances = Advance.objects.filter(
+        employee__in=employees, date__gte=month_start, date__lte=today,
+    )
+ 
+    full_counts, half_counts = {}, {}
+    for a in month_attendance:
+        bucket = full_counts if a.day_type == 'full' else half_counts
+        bucket[a.employee_id] = bucket.get(a.employee_id, 0) + 1
+ 
+    advance_totals = {}
+    for adv in month_advances:
+        advance_totals[adv.employee_id] = advance_totals.get(adv.employee_id, 0) + adv.amount
+ 
+    staff_month = []
+    for emp in employees:
+        full_days = full_counts.get(emp.id, 0)
+        half_days = half_counts.get(emp.id, 0)
+        advance = advance_totals.get(emp.id, 0)
+        # round() handles odd daily_wage * half-day (e.g. 501 wage -> 250.5 -> 251)
+        earned = round(emp.daily_wage * (full_days + 0.5 * half_days))
+        staff_month.append({
+            'id': emp.id,
+            'name': emp.name,
+            'color': _avatar_color(emp.id),
+            'full_days': full_days,
+            'half_days': half_days,
+            'advance': advance,
+            'net': earned - advance,
+        })
+ 
+    return render(request, 'locations/staff_list.html', {
+        'staff_today': staff_today,
+        'staff_month': staff_month,
+        'today': today,
+    })
+ 
+@login_required
+def mark_attendance(request):
+    if not (time(8, 0) <= timezone.localtime().time() <= time(20, 0)):
+        messages.error(request, 'You can only mark attendance between 8:00 AM and 8:00 PM.')
+        return redirect('staff_list')
+    employee = request.user.employee
+    day_type = request.GET.get('day_type', 'full')
+    obj, created = Attendance.objects.get_or_create(
+        employee=employee,
+        date=timezone.localdate(),
+        defaults={'day_type': day_type}
+    )
+    if not created:
+        messages.error(request, 'Already marked for today')
+        return redirect('staff_list')
+    label = 'Full day' if day_type == 'full' else 'Half day'
+    messages.success(request, f'Marked {employee.name} as {label}.')
+    return redirect('staff_list')
+
+@login_required
+def add_advance(request):
+    if request.method == "POST":
+        employee = request.user.employee
+        amount = request.POST.get("amount", "").strip()
+        note = request.POST.get("note", "").strip()
+        Advance.objects.create(employee=employee, amount=amount, note=note)
+        return redirect('staff_list')
+    return render(request, "locations/add_advance.html")
+
+
+
+@login_required
+def staff_detail(request, pk):
+    employee = get_object_or_404(Employee, pk=pk)
+
+    today = timezone.localdate()
+    try:
+        year = int(request.GET.get('year', today.year))
+        month = int(request.GET.get('month', today.month))
+    except ValueError:
+        year, month = today.year, today.month
+
+    first_day = date(year, month, 1)
+    last_day = date(year, month, calendar.monthrange(year, month)[1])
+
+    attendance_qs = employee.attendance.filter(date__range=(first_day, last_day)).order_by('date')
+    advances_qs = employee.advances.filter(date__range=(first_day, last_day)).order_by('-date')
+
+    full_days = attendance_qs.filter(day_type='full').count()
+    half_days = attendance_qs.filter(day_type='half').count()
+
+    earned = (full_days * employee.daily_wage) + (half_days * employee.daily_wage // 2)
+
+    total_advance = advances_qs.aggregate(t=Sum('amount'))['t'] or 0
+    pending_advance = advances_qs.filter(approved=False).aggregate(t=Sum('amount'))['t'] or 0
+
+    net = earned - total_advance
+
+    # attendance marked-dates set, for calendar-style rendering
+    attendance_by_day = {a.date.day: a.day_type for a in attendance_qs}
+
+    first_weekday, days_in_month = calendar.monthrange(year, month)
+    # monthrange: Mon=0 ... Sun=6 → convert to Sun=0 ... Sat=6
+    sunday_start_offset = (first_weekday + 1) % 7
+
+    calendar_days = []
+    for _ in range(sunday_start_offset):
+        calendar_days.append(None)  # leading blanks
+
+    for d in range(1, days_in_month + 1):
+        day_date = date(year, month, d)
+        calendar_days.append({
+            'day': d,
+            'date': day_date,
+            'status': attendance_by_day.get(d),
+            'is_future': day_date > today,
+            'is_today': day_date == today,
+        })
+
+    # prev/next month for nav
+    prev_month = month - 1 or 12
+    prev_year = year - 1 if month == 1 else year
+    next_month = month + 1 if month < 12 else 1
+    next_year = year + 1 if month == 12 else year
+    is_current_month = (year == today.year and month == today.month)
+
+    context = {
+        'employee': employee,
+        'today': today,
+        'month_label': first_day.strftime('%B %Y'),
+        'full_days': full_days,
+        'half_days': half_days,
+        'earned': earned,
+        'total_advance': total_advance,
+        'pending_advance': pending_advance,
+        'net': net,
+        'advances': advances_qs,
+        'calendar_days': calendar_days,
+        'year': year, 'month': month,
+        'prev_year': prev_year, 'prev_month': prev_month,
+        'next_year': next_year, 'next_month': next_month,
+        'is_current_month': is_current_month,
+    }
+    return render(request, 'locations/staff_detail.html', context)
+
 def backup_media(request):
     import zipfile
     from datetime import datetime

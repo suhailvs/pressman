@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Add Advance{% endblock %}
+
+{% block content %}
+<div class="chat-app">
+  <header class="chat-header">
+    <h1 class="chat-header__title">Add Advance</h1>
+    <div class="chat-header__actions">
+        <a href="{% url 'staff_list' %}" class="icon-btn" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        </a>
+    </div>
+  </header>
+
+  <form method="post" style="padding: 16px;">
+    {% csrf_token %}
+    <label for="id_amount" style="font-weight:600; font-size:0.9rem;">Amount (₹)</label>
+    <input type="number" step="0.01" min="0.01" inputmode="decimal"
+           name="amount" id="id_amount" required
+           value="{{ amount|default:'' }}"
+           style="width:100%; padding:10px; margin:6px 0 16px; border:1px solid var(--wa-border); border-radius:8px; font-size:1rem;">
+
+    <label for="id_note" style="font-weight:600; font-size:0.9rem;">Note (optional)</label>
+    <textarea name="note" id="id_note" rows="3"
+              style="width:100%; padding:10px; margin:6px 0 20px; border:1px solid var(--wa-border); border-radius:8px; font-size:1rem;">{{ note|default:'' }}</textarea>
+
+    <button type="submit" style="width:100%; padding:12px; background:var(--wa-accent); color:#fff; border:none; border-radius:10px; font-weight:600; font-size:1rem;">
+      Save advance
+    </button>
+  </form>
+</div>
+{% endblock %}

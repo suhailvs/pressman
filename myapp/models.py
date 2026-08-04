@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 class User(AbstractUser):
     phone = models.CharField(max_length=20, blank=True, null=True)
@@ -96,3 +97,26 @@ class PickupItem(models.Model):
  
     def __str__(self):
         return f"{self.quantity} x {self.item.name}"
+
+class Employee(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    daily_wage = models.PositiveIntegerField()
+    is_active = models.BooleanField(default=True)
+ 
+class Advance(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='advances')
+    amount = models.PositiveIntegerField()
+    date = models.DateField(default=timezone.localdate)
+    note = models.CharField(max_length=200, blank=True)
+    approved = models.BooleanField(default=False)
+    
+class Attendance(models.Model):
+    DAY_TYPE_CHOICES = [('full', 'Full Day'), ('half', 'Half Day')]
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='attendance')
+    date = models.DateField(default=timezone.localdate)
+    day_type = models.CharField(max_length=4, choices=DAY_TYPE_CHOICES, default='full')
+    marked_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('employee', 'date')

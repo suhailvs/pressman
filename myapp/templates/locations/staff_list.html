@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Staff{% endblock %}
+
+{% block extra_css %}
+  .staff-section-label{
+    padding: 10px 16px 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--wa-text-muted);
+    text-transform: uppercase;
+    background: #fff;
+  }
+
+  .staff-row{
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px;
+    background: #fff;
+    border-bottom: 1px solid var(--wa-border);
+    text-decoration: none;
+    color: inherit;
+  }
+  .staff-row:active{ background: var(--wa-bg); }
+
+  .staff-avatar{
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 600; font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .staff-row__body{ flex: 1; min-width: 0; }
+  .staff-row__name{ font-size: 1rem; font-weight: 600; color: var(--wa-text); margin: 0; }
+  .staff-row__sub{ font-size: 0.82rem; margin: 2px 0 0; color: var(--wa-text-muted); }
+  .staff-row__sub--marked{ color: var(--wa-green); font-weight: 500; }
+  .staff-row__sub--pending{ color: #B8860B; font-weight: 500; }
+
+  .staff-row__meta{ text-align: right; flex-shrink: 0; }
+  .staff-row__net-label{ font-size: 0.72rem; color: var(--wa-text-muted); margin: 0; }
+  .staff-row__net-value{ font-size: 0.95rem; font-weight: 700; color: var(--wa-text); margin: 2px 0 0; }
+
+  .status-pill{
+    font-size: 0.78rem; font-weight: 600;
+    padding: 5px 12px; border-radius: 14px;
+    white-space: nowrap;
+  }
+  .status-pill--full{ background: #E4F5EE; color: var(--wa-green); }
+  .status-pill--half{ background: #FDF0DA; color: #B8860B; }
+  .status-pill--pending{ background: var(--wa-border); color: var(--wa-text-muted); }
+
+  /* FAB */
+  .fab{
+    position: fixed;
+    bottom: max(20px, env(safe-area-inset-bottom, 0px));
+    right: calc(50% - 240px + 20px);
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--wa-accent); color: #fff; border: none;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.22);
+    z-index: 1055;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+  .fab svg{ transition: transform 0.2s ease; }
+  .fab.is-open{ background: var(--wa-green-dark); }
+  .fab.is-open svg{ transform: rotate(45deg); }
+  @media (min-width: 480px){
+    .fab{ right: calc(50% - 240px + 20px); }
+  }
+  @media (max-width: 479px){
+    .fab{ right: 20px; }
+  }
+
+  /* Quick actions bottom sheet */
+  .qa-sheet{
+    position: fixed;
+    left: 50%; transform: translateX(-50%);
+    bottom: 0;
+    width: 100%; max-width: 480px;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -6px 24px rgba(0,0,0,0.18);
+    padding: 10px 8px calc(24px + env(safe-area-inset-bottom, 0px));
+    z-index: 1060;
+    transform-origin: bottom center;
+    transition: transform 0.25s ease;
+    transform: translateX(-50%) translateY(100%);
+  }
+  .qa-sheet.is-open{ transform: translateX(-50%) translateY(0); }
+
+  .qa-sheet__handle{
+    width: 40px; height: 4px; border-radius: 2px;
+    background: var(--wa-border);
+    margin: 4px auto 14px;
+  }
+  .qa-sheet__title{
+    font-size: 0.85rem; color: var(--wa-text-muted);
+    font-weight: 600; padding: 0 16px 6px;
+    margin: 0;
+  }
+
+  .qa-item{
+    display: flex; align-items: center; gap: 14px;
+    width: 100%; background: none; border: none; text-align: left;
+    padding: 12px 16px; text-decoration: none; color: inherit;
+  }
+  .qa-item:active{ background: var(--wa-bg); }
+  .qa-item__icon{
+    width: 42px; height: 42px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .qa-item__icon--attendance{ background: #E4F5EE; color: var(--wa-green); }
+  .qa-item__icon--advance{ background: #FDF0DA; color: #B8860B; }
+  .qa-item__icon--staff{ background: #EDE9F7; color: #6B4FA8; }
+  .qa-item__body{ min-width: 0; }
+  .qa-item__title{ font-size: 0.98rem; font-weight: 600; color: var(--wa-text); margin: 0; }
+  .qa-item__sub{ font-size: 0.8rem; color: var(--wa-text-muted); margin: 2px 0 0; }
+
+  .qa-backdrop{
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1050;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .qa-backdrop.is-open{ opacity: 1; pointer-events: auto; }
+{% endblock %}
+
+{% block content %}
+<div class="chat-app">
+
+  <header class="chat-header">
+    <h1 class="chat-header__title">Staff({{ request.user.username }})</h1>
+    <div class="chat-header__actions">
+      <form method="post" action="{% url 'logout' %}" class="logout-form">
+        {% csrf_token %}
+        <button class="icon-btn" type="submit" aria-label="Log out">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <path d="M16 17l5-5-5-5"/>
+            <path d="M21 12H9"/>
+          </svg>
+        </button>
+      </form>
+      <a href="{% url 'location_list' %}" class="icon-btn" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <div class="staff-section-label">Today &middot; {{ today|date:"j M" }}</div>
+  {% for s in staff_today %}
+    <a href="#" class="staff-row">
+      <div class="staff-avatar" style="background: {{ s.color }};">{{ s.name|first|upper }}</div>
+      <div class="staff-row__body">
+        <p class="staff-row__name">{{ s.name }}</p>
+        {% if s.marked_time %}
+          <p class="staff-row__sub staff-row__sub--marked">Marked at {{ s.marked_time }}</p>
+        {% else %}
+          <p class="staff-row__sub staff-row__sub--pending">Not marked yet</p>
+        {% endif %}
+      </div>
+      {% if s.status == "full" %}
+        <span class="status-pill status-pill--full">Full day</span>
+      {% elif s.status == "half" %}
+        <span class="status-pill status-pill--half">Half day</span>
+      {% else %}
+        <span class="status-pill status-pill--pending">Pending</span>
+      {% endif %}
+    </a>
+  {% endfor %}
+
+  <div class="staff-section-label">This month</div>
+  {% for s in staff_month %}
+    <a href="{% url 'staff_detail' s.id %}" class="staff-row">
+      <div class="staff-avatar" style="background: {{ s.color }};">{{ s.name|first|upper }}</div>
+      <div class="staff-row__body">
+        <p class="staff-row__name">{{ s.name }}</p>
+        <p class="staff-row__sub">{{ s.full_days }} full &middot; {{ s.half_days }} half &middot; &#8377;{{ s.advance }} advance</p>
+      </div>
+      <div class="staff-row__meta">
+        <p class="staff-row__net-label">Net</p>
+        <p class="staff-row__net-value">&#8377;{{ s.net }}</p>
+      </div>
+    </a>
+  {% endfor %}
+
+  <div class="qa-backdrop" id="qaBackdrop"></div>
+
+  <div class="qa-sheet" id="qaSheet" role="dialog" aria-modal="true" aria-labelledby="qaSheetTitle">
+    <div class="qa-sheet__handle"></div>
+    <p class="qa-sheet__title" id="qaSheetTitle">Quick actions</p>
+
+    <a href="{% url 'mark_attendance' %}" class="qa-item">
+      <span class="qa-item__icon qa-item__icon--attendance">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
+          <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                d="m9 12 2 2 4-4"/>
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </span>
+      <span class="qa-item__body">
+        <p class="qa-item__title">Mark attendance</p>
+        <p class="qa-item__sub">Full day or half day for today</p>
+      </span>
+    </a>
+
+    <a href="{% url 'add_advance' %}" class="qa-item">
+      <span class="qa-item__icon qa-item__icon--advance">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
+          <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </span>
+      <span class="qa-item__body">
+        <p class="qa-item__title">Add advance</p>
+        <p class="qa-item__sub">Record a payment taken from the shop</p>
+      </span>
+    </a>
+
+    <a href="{# url 'add_staff' #}" class="qa-item">
+      <span class="qa-item__icon qa-item__icon--staff">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
+          <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                d="M20 21a8 8 0 0 0-16 0"/>
+          <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </span>
+      <span class="qa-item__body">
+        <p class="qa-item__title">Add staff</p>
+        <p class="qa-item__sub">New employee profile</p>
+      </span>
+    </a>
+  </div>
+
+  <button type="button" class="fab" id="qaFab" aria-label="Quick actions" aria-expanded="false">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+      <path stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M12 5v14M5 12h14"/>
+    </svg>
+  </button>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Quick-actions bottom sheet
+  (function () {
+    const fab = document.getElementById("qaFab");
+    const sheet = document.getElementById("qaSheet");
+    const backdrop = document.getElementById("qaBackdrop");
+
+    function openSheet () {
+      sheet.classList.add("is-open");
+      backdrop.classList.add("is-open");
+      fab.classList.add("is-open");
+      fab.setAttribute("aria-expanded", "true");
+    }
+    function closeSheet () {
+      sheet.classList.remove("is-open");
+      backdrop.classList.remove("is-open");
+      fab.classList.remove("is-open");
+      fab.setAttribute("aria-expanded", "false");
+    }
+
+    fab.addEventListener("click", function () {
+      sheet.classList.contains("is-open") ? closeSheet() : openSheet();
+    });
+    backdrop.addEventListener("click", closeSheet);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeSheet();
+    });
+  })();
+</script>
+{% endblock %}
