@@ -7,23 +7,19 @@
 <link rel="manifest" href="{% static 'pwa/manifest.webmanifest' %}">
 {% endblock %}
 
-{% block content %}
-<div class="chat-app">
 
-  <!-- Top bar -->
-  <header class="chat-header">
-    <h1 class="chat-header__title">Locations</h1>
-    <div class="chat-header__actions">
-      <a href="#" class="add-button icon-btn" aria-label="Install app">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 3v12"/>
-          <path d="M7 10l5 5 5-5"/>
-          <path d="M5 21h14"/>
-        </svg>
-      </a>
-    </div>
-  </header>
+{% block chat_header_title %}Locations{% endblock %}
+{% block chat_header_actions %}
+  <a href="#" class="add-button icon-btn" aria-label="Install app">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3v12"/>
+      <path d="M7 10l5 5 5-5"/>
+      <path d="M5 21h14"/>
+    </svg>
+  </a>
+{% endblock %}
 
+{% block page_content %}
   <!-- Search (client-side, filters the list below with no page reload) -->
   <div class="chat-search">
     <div class="chat-search__box">
@@ -116,11 +112,9 @@
       <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
     </svg>
   </a>
-</div>
 {% endblock %}
 
 {% block extra_css %}
-  .chat-header__title{ font-size: 1.35rem; }
   .logout-form{ display: inline-flex; margin: 0; }
 
   /* This page has a FAB that must stay visible without scrolling the whole

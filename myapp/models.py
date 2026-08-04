@@ -100,9 +100,11 @@ class PickupItem(models.Model):
 
 class Employee(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100)
+    # name = models.CharField(max_length=100)
     daily_wage = models.PositiveIntegerField()
     is_active = models.BooleanField(default=True)
+    def __str__(self):
+        return f"{self.user.get_full_name()} ({self.user.username})"
  
 class Advance(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='advances')
@@ -110,6 +112,8 @@ class Advance(models.Model):
     date = models.DateField(default=timezone.localdate)
     note = models.CharField(max_length=200, blank=True)
     approved = models.BooleanField(default=False)
+    def __str__(self):
+        return f"{self.employee.user.get_full_name()} - {self.amount} on {self.date}"
     
 class Attendance(models.Model):
     DAY_TYPE_CHOICES = [('full', 'Full Day'), ('half', 'Half Day')]
@@ -120,3 +124,5 @@ class Attendance(models.Model):
     
     class Meta:
         unique_together = ('employee', 'date')
+    def __str__(self):
+        return f"{self.employee.user.get_full_name()} - {self.date} ({self.day_type})"

@@ -3,26 +3,16 @@
 
 {% block title %}{{ location.name }}{% endblock %}
 
-{% block content %}
-<div class="chat-app">
+{% block chat_header_title %}Location Info{% endblock %}
+{% block chat_header_actions %}
+  <a href="{% url 'location_list' %}" class="icon-btn" aria-label="Close">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </a>
+{% endblock %}
 
-  <!-- Top bar -->
-  <header class="chat-header">
-    <!-- <button class="icon-btn" type="button" onclick="window.history.back()" aria-label="Back">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M15 18l-6-6 6-6"/>
-      </svg>
-    </button> -->
-    <h1 class="chat-header__title">Location Info</h1>
-    <div class="chat-header__actions">
-      <a href="{% url 'location_list' %}" class="icon-btn" aria-label="Close">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </a>
-    </div>
-  </header>
-
+{% block page_content %}
   <div class="detail">
 
     <!-- Photo + name -->
@@ -210,12 +200,9 @@
       </button>
     </form>
   </nav>
-</div>
 {% endblock %}
 {% block bottom_nav %}{% endblock %}
 {% block extra_css %}
-  .chat-header__title{ font-size: 1.2rem; }
-
   /* Leave room at the bottom of the scrollable content so the fixed
      bottom-tabs bar never covers the last row / meta text. */
   .detail{ padding-bottom: 76px; }

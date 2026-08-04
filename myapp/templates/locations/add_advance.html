@@ -1,19 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Add Advance{% endblock %}
 
-{% block content %}
-<div class="chat-app">
-  <header class="chat-header">
-    <h1 class="chat-header__title">Add Advance</h1>
-    <div class="chat-header__actions">
-        <!-- <a href="{% url 'staff_list' %}" class="icon-btn" aria-label="Close">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-        </a> -->
-    </div>
-  </header>
-
+{% block chat_header_title %}Add Advance{% endblock %}
+{% block page_content %}
   <form method="post" style="padding: 16px;">
     {% csrf_token %}
     <label for="id_amount" style="font-weight:600; font-size:0.9rem;">Amount (₹)</label>
@@ -30,5 +19,4 @@
       Save advance
     </button>
   </form>
-</div>
 {% endblock %}

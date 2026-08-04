@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ employee.name }}{% endblock %}
+{% block title %}{{ employee.user.first_name }}{% endblock %}
 
 {% block extra_css %}
   .sd-hero{
@@ -97,24 +97,12 @@
   .sd-empty{ padding: 24px 16px; text-align: center; color: var(--wa-text-muted); font-size: 0.9rem; }
 {% endblock %}
 
-{% block content %}
-<div class="chat-app">
-
-  <header class="chat-header">
-    <h1 class="chat-header__title">{{ employee.name }}</h1>
-    <div class="chat-header__actions">
-        <!-- <a href="{% url 'staff_list' %}" class="icon-btn" aria-label="Close">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-        </a> -->
-    </div>
-  </header>
-
+{% block chat_header_title %}{{ employee.user.first_name }}{% endblock %}
+{% block page_content %}
   <div class="sd-hero">
-    <div class="sd-avatar">{{ employee.name|first|upper }}</div>
+    <div class="sd-avatar">{{ employee.user.first_name|first|upper }}</div>
     <div>
-      <p class="sd-hero__name">{{ employee.name }}</p>
+      <p class="sd-hero__name">{{ employee.user.first_name }}</p>
       <p class="sd-hero__wage">&#8377;{{ employee.daily_wage }}/day &middot; {% if employee.is_active %}Active{% else %}Inactive{% endif %}</p>
     </div>
   </div>
@@ -207,5 +195,5 @@
     <div class="sd-empty">No advances recorded this month.</div>
   {% endfor %}
 
-</div>
+  </div>
 {% endblock %}

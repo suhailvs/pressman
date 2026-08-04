@@ -130,30 +130,21 @@
   .qa-backdrop.is-open{ opacity: 1; pointer-events: auto; }
 {% endblock %}
 
-{% block content %}
-<div class="chat-app">
+{% block chat_header_title %}Staff:{{ request.user.first_name }}{% endblock %}
+{% block chat_header_actions %}
+  <form method="post" action="{% url 'logout' %}" class="logout-form">
+    {% csrf_token %}
+    <button class="icon-btn" type="submit" aria-label="Log out">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <path d="M16 17l5-5-5-5"/>
+        <path d="M21 12H9"/>
+      </svg>
+    </button>
+  </form>
+{% endblock %}
 
-  <header class="chat-header">
-    <h1 class="chat-header__title">Staff({{ request.user.username }})</h1>
-    <div class="chat-header__actions">
-      <form method="post" action="{% url 'logout' %}" class="logout-form">
-        {% csrf_token %}
-        <button class="icon-btn" type="submit" aria-label="Log out">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <path d="M16 17l5-5-5-5"/>
-            <path d="M21 12H9"/>
-          </svg>
-        </button>
-      </form>
-      <!-- <a href="{% url 'location_list' %}" class="icon-btn" aria-label="Close">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </a> -->
-    </div>
-  </header>
-
+{% block page_content %}
   <div class="staff-section-label">Today &middot; {{ today|date:"j M" }}</div>
   {% for s in staff_today %}
     <a href="#" class="staff-row">
@@ -244,8 +235,6 @@
       <path stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M12 5v14M5 12h14"/>
     </svg>
   </button>
-
-</div>
 {% endblock %}
 
 {% block extra_js %}

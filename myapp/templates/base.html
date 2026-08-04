@@ -43,7 +43,8 @@
     .chat-header{
       background: var(--wa-green-dark);
       color: #fff;
-      padding: 14px 16px;
+      height: 56px;
+      padding: 0 16px;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -51,8 +52,14 @@
       top: 0;
       z-index: 10;
     }
-    .chat-header__title{ font-size: 1.2rem; font-weight: 600; margin: 0; }
+    .chat-header__title{
+      font-size: 1.2rem;
+      font-weight: 600;
+      line-height: 1;
+      margin: 0;
+    }
     .chat-header__actions{ margin-left: auto; display: flex; gap: 8px; }
+    
 
     .icon-btn{
       background: transparent; border: none; color: #fff;
@@ -193,7 +200,7 @@
     /* Reserve space at the bottom of every page's scroll area so content
        (and the FAB) never sits underneath the fixed nav bar */
     .has-bottom-nav{
-      padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+      padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
     }
     {% block extra_css %}{% endblock %}
   </style>
@@ -216,7 +223,21 @@
     </div>
   {% endif %}
 
-  {% block content %}{% endblock %}
+  {% block content %}
+  <div class="chat-app{% block chat_app_classes %} has-bottom-nav{% endblock %}">
+    {% block chat_header %}
+    <header class="chat-header">
+      <h1 class="chat-header__title">{% block chat_header_title %}{% endblock %}</h1>
+      <div class="chat-header__actions">
+        {% block chat_header_actions %}{% endblock %}
+      </div>
+    </header>
+    {% endblock %}
+
+    {% block page_content %}{% endblock %}
+    {% block extra_bottom %}{% endblock %}
+  </div>
+  {% endblock %}
   {% block bottom_nav %}
   <!-- Bottom tab bar -->
   <nav class="bottom-nav" aria-label="Primary">
@@ -227,15 +248,6 @@
         <path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/>
       </svg>
       <span class="bottom-nav__label">Locations</span>
-    </a>
-    <a href="{% url 'location_map' %}"
-       class="bottom-nav__item {% if request.resolver_match.url_name == 'location_map' %}is-active{% endif %}">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
-        <line x1="8" y1="2" x2="8" y2="18"/>
-        <line x1="16" y1="6" x2="16" y2="22"/>
-      </svg>
-      <span class="bottom-nav__label">Map</span>
     </a>
     <a href="{% url 'all_pickups' %}"
        class="bottom-nav__item {% if request.resolver_match.url_name == 'all_pickups' %}is-active{% endif %}">
@@ -253,6 +265,15 @@
         <circle cx="12" cy="7" r="4"/>
       </svg>
       <span class="bottom-nav__label">Staff</span>
+    </a>
+    <a href="{% url 'location_map' %}"
+       class="bottom-nav__item {% if request.resolver_match.url_name == 'location_map' %}is-active{% endif %}">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+        <line x1="8" y1="2" x2="8" y2="18"/>
+        <line x1="16" y1="6" x2="16" y2="22"/>
+      </svg>
+      <span class="bottom-nav__label">Map</span>
     </a>
   </nav>
   {% endblock %}

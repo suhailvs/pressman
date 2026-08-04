@@ -3,34 +3,16 @@
 
 {% block title %}All Locations{% endblock %}
 
-{% block content %}
-<div class="chat-app">
+{% block chat_header_title %}All Locations <span class="map-count-badge">{{ locations.count }}</span>{% endblock %}
 
-  <!-- Top bar -->
-  <header class="chat-header">
-    <h1 class="chat-header__title">All Locations <span class="map-count-badge">{{ locations.count }}</span></h1>
-    <div class="chat-header__actions">
-      
-      <!-- <a href="{% url 'location_list' %}" class="icon-btn" aria-label="Close">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </a> -->
-    </div>
-  </header>
-
+{% block page_content %}
   <!-- Map -->
   <div class="map-wrap">
     <div id="locations-map"></div>
   </div>
-
-</div>
 {% endblock %}
 
 {% block extra_css %}
-<style>
-  .chat-header__title{ font-size: 1.2rem; }
-
   .map-count-badge{
     display: inline-flex;
     align-items: center;
@@ -47,10 +29,10 @@
 
   .map-wrap{
     position: absolute;
-    top: var(--header-height, 56px);
+    top: var(--header-height, 50px);
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: calc(50px + env(safe-area-inset-bottom, 0px));
   }
 
   #locations-map{
@@ -101,7 +83,6 @@
     background: var(--surface-muted, #f3f4f6);
     color: var(--text, #111827);
   }
-</style>
 {% endblock %}
 
 {% block extra_js %}

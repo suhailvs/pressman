@@ -4,21 +4,10 @@
 
 {% block title %}All Pickups{% endblock %}
 
-{% block content %}
-<div class="chat-app">
 
-  <!-- Top bar -->
-  <header class="chat-header">
-    <h1 class="chat-header__title">All Pickups</h1>
-    <div class="chat-header__actions">
-      <!-- <a href="{% url 'location_list' %}" class="icon-btn" aria-label="Close">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </a> -->
-    </div>
-  </header>
+{% block chat_header_title %}All Pickups{% endblock %}
 
+{% block page_content %}
   <!-- Search (client-side, filters the list below) -->
   <div class="chat-search">
     <div class="chat-search__box">
@@ -46,8 +35,11 @@
   </label>
 
   <!-- Pickup list -->
-  <main class="chat-list" role="list">
-    {% for pickup in pickups %}
+  <main class="chat-list has-bottom-nav" role="list">
+  {% for group in grouped_pickups %}
+    <div class="date-divider"><span class="date-divider__pill">{{ group.label }}</span></div>
+
+    {% for pickup in group.pickups %}
     <div class="chat-row"
          role="listitem"
          tabindex="0"
@@ -117,16 +109,17 @@
       </div>
       {% endif %}
     </div>
+    {% endfor %}
     {% empty %}
-    <div class="chat-empty">
-      {% if show_all %}
-        <p class="chat-empty__title">No pickups yet</p>
-        <p class="chat-empty__text">Pickups added across all locations will show up here.</p>
-      {% else %}
-        <p class="chat-empty__title">No pending pickups</p>
-        <p class="chat-empty__text">Tick "Show all statuses" to see picked up, delivered, or cancelled pickups too.</p>
-      {% endif %}
-    </div>
+      <div class="chat-empty">
+        {% if show_all %}
+          <p class="chat-empty__title">No pickups yet</p>
+          <p class="chat-empty__text">Pickups added across all locations will show up here.</p>
+        {% else %}
+          <p class="chat-empty__title">No pending pickups</p>
+          <p class="chat-empty__text">Tick "Show all statuses" to see picked up, delivered, or cancelled pickups too.</p>
+        {% endif %}
+      </div>
     {% endfor %}
 
     {% if pickups %}
@@ -170,12 +163,9 @@
     {% endif %}
   </nav>
   {% endif %}
-</div>
 {% endblock %}
 
 {% block extra_css %}
-  .chat-header__title{ font-size: 1.35rem; }
-
   /* Search */
   .chat-search{ padding: 10px 12px; background: #fff; border-bottom: 1px solid var(--wa-border); }
   .chat-search__box{
@@ -200,6 +190,17 @@
     font-size: 0.85rem; color: var(--wa-text-muted); cursor: pointer;
   }
   .show-all-toggle input{ accent-color: var(--wa-green); width: 16px; height: 16px; }
+
+  .date-divider{
+    display: flex; justify-content: center;
+    padding: 12px 0 6px;
+  }
+  .date-divider__pill{
+    background: var(--wa-border);
+    color: var(--wa-text-muted);
+    font-size: 0.72rem; font-weight: 600;
+    padding: 4px 14px; border-radius: 12px;
+  }
 
   /* Pagination */
   .pagination{

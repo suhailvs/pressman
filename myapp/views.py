@@ -1,6 +1,7 @@
 import re
 import calendar
 import requests
+from itertools import groupby
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.contrib.auth.views import LoginView
@@ -183,16 +184,47 @@ def mark_pickup_paid(request, pk):
             messages.error(request, "Select a payment method and enter a valid amount.")
     return redirect("pickup_detail", pk=pickup.pk)
 
+
+def _date_group_label(d, today):
+    delta = (today - d).days
+    if delta == 0:
+        return "Today"
+    if delta == 1:
+        return "Yesterday"
+    if 2 <= delta <= 6:
+        return d.strftime("%A")  # e.g. "Sunday"
+    return d.strftime("%b %d, %Y")  # e.g. "Jul 28, 2026"
+
 @login_required
 def all_pickups(request):
-    show_all = request.GET.get("show_all") == "1" 
-    pickups_qs = Pickup.objects.select_related("location").exclude(status=Pickup.STATUS_CANCELLED).order_by("-created_at")
+    show_all = request.GET.get("show_all") == "1"
+    pickups_qs = (
+        Pickup.objects.select_related("location")
+        .exclude(status=Pickup.STATUS_CANCELLED)
+        .order_by("-created_at")
+    )
     if not show_all:
-        pickups_qs = pickups_qs.exclude(status=Pickup.STATUS_DELIVERED) 
-    paginator = Paginator(pickups_qs, 50)
-    page_obj = paginator.get_page(request.GET.get("page")) 
-    return render(request, "locations/all_pickups.html", {"pickups": page_obj,"page_obj": page_obj,"show_all": show_all})
+        pickups_qs = pickups_qs.exclude(status=Pickup.STATUS_DELIVERED)
 
+    paginator = Paginator(pickups_qs, 50)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    today = timezone.localdate()
+    grouped_pickups = [
+        {"label": _date_group_label(created_date, today), "pickups": list(items)}
+        for created_date, items in groupby(
+            page_obj.object_list,
+            key=lambda p: timezone.localtime(p.created_at).date(),
+        )
+    ]
+
+    return render(request, "locations/all_pickups.html", {
+        "pickups": page_obj,
+        "page_obj": page_obj,
+        "show_all": show_all,
+        "grouped_pickups": grouped_pickups,
+    })
+    
 @login_required
 def quick_add_pickup(request, pk):
     location = get_object_or_404(Location, pk=pk)
@@ -248,7 +280,7 @@ def _avatar_color(employee_id):
 @login_required 
 def staff_list(request):
     today = timezone.localdate()
-    employees = Employee.objects.filter(is_active=True).order_by('name')
+    employees = Employee.objects.filter(is_active=True).order_by('user__first_name')
  
     todays_attendance = {
         a.employee_id: a
@@ -260,7 +292,7 @@ def staff_list(request):
         att = todays_attendance.get(emp.id)
         staff_today.append({
             'id': emp.id,
-            'name': emp.name,
+            'name': emp.user.get_full_name() or emp.user.username,
             'color': _avatar_color(emp.id),
             'marked_time': timezone.localtime(att.marked_at).strftime('%-I:%M %p') if att else None,
             'status': att.day_type if att else 'pending',
@@ -292,7 +324,7 @@ def staff_list(request):
         earned = round(emp.daily_wage * (full_days + 0.5 * half_days))
         staff_month.append({
             'id': emp.id,
-            'name': emp.name,
+            'name': emp.user.get_full_name() or emp.user.username,
             'color': _avatar_color(emp.id),
             'full_days': full_days,
             'half_days': half_days,

@@ -4,21 +4,8 @@
 
 {% block title %}Pickup — {{ pickup.picked_up_at|date:"M j, Y"|default:"New" }}{% endblock %}
 
-{% block content %}
-<div class="chat-app">
-
-  <!-- Top bar -->
-  <header class="chat-header">
-    <h1 class="chat-header__title">Pickup Info</h1>
-    <div class="chat-header__actions">
-      <!-- <a href="{% url 'all_pickups' %}" class="icon-btn" aria-label="Close">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </a> -->
-    </div>
-  </header>
-
+{% block chat_header_title %}Pickup Info{% endblock %}
+{% block page_content %}
   <div class="detail">
 
     <!-- Photo + status -->
@@ -412,12 +399,9 @@
     </div>
   </div>
   {% endif %}
-</div>
 {% endblock %}
 
 {% block extra_css %}
-  .chat-header__title{ font-size: 1.2rem; }
-
   /* Hero */
   .detail__hero{
     display: flex; flex-direction: column; align-items: center;
