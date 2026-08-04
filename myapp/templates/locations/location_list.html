@@ -21,26 +21,6 @@
           <path d="M5 21h14"/>
         </svg>
       </a>
-      <a href="{% url 'location_map' %}" class="icon-btn" aria-label="View map">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
-          <line x1="8" y1="2" x2="8" y2="18"/>
-          <line x1="16" y1="6" x2="16" y2="22"/>
-        </svg>
-       </a>
-      <a href="{% url 'all_pickups' %}" class="icon-btn" aria-label="All pickups">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-          <path d="M3 6h18"/>
-          <path d="M16 10a4 4 0 0 1-8 0"/>
-        </svg>
-      </a>
-      <a href="{% url 'staff_list' %}" class="icon-btn" aria-label="Staffs">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21a8 8 0 0 0-16 0"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-      </a>
     </div>
   </header>
 
@@ -65,7 +45,7 @@
   </div>
 
   <!-- Location list -->
-  <main class="chat-list" role="list">
+  <main class="chat-list has-bottom-nav" role="list">
     {% for location in locations %}
     <div class="chat-row"
          role="listitem"
@@ -219,7 +199,7 @@
   .fab{
     position: fixed;
     right: max(18px, calc(50vw - 240px + 18px));
-    bottom: max(24px, calc(24px + env(safe-area-inset-bottom, 0px)));
+    bottom: max(74px, calc(74px + env(safe-area-inset-bottom, 0px)));
     width: 56px; height: 56px; border-radius: 50%;
     background: var(--wa-accent); color: #fff; border: none;
     display: flex; align-items: center; justify-content: center;

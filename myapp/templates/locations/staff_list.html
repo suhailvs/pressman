@@ -55,7 +55,7 @@
   /* FAB */
   .fab{
     position: fixed;
-    bottom: max(20px, env(safe-area-inset-bottom, 0px));
+    bottom: max(74px, calc(74px + env(safe-area-inset-bottom, 0px)));
     right: calc(50% - 240px + 20px);
     width: 56px; height: 56px; border-radius: 50%;
     background: var(--wa-accent); color: #fff; border: none;
@@ -146,11 +146,11 @@
           </svg>
         </button>
       </form>
-      <a href="{% url 'location_list' %}" class="icon-btn" aria-label="Close">
+      <!-- <a href="{% url 'location_list' %}" class="icon-btn" aria-label="Close">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
-      </a>
+      </a> -->
     </div>
   </header>
 
@@ -224,7 +224,7 @@
       </span>
     </a>
 
-    <a href="{# url 'add_staff' #}" class="qa-item">
+    <!-- <a href="{# url 'add_staff' #}" class="qa-item">
       <span class="qa-item__icon qa-item__icon--staff">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
           <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -236,7 +236,7 @@
         <p class="qa-item__title">Add staff</p>
         <p class="qa-item__sub">New employee profile</p>
       </span>
-    </a>
+    </a> -->
   </div>
 
   <button type="button" class="fab" id="qaFab" aria-label="Quick actions" aria-expanded="false">
