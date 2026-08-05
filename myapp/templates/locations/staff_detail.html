@@ -31,7 +31,7 @@
   }
 
   .sd-summary{
-    display: grid; grid-template-columns: 1fr 1fr;
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
     gap: 1px; background: var(--wa-border);
     margin: 10px 0;
   }
@@ -40,7 +40,6 @@
   }
   .sd-summary__label{ font-size: 0.75rem; color: var(--wa-text-muted); margin: 0; text-transform: uppercase; letter-spacing: 0.03em; }
   .sd-summary__value{ font-size: 1.2rem; font-weight: 700; color: var(--wa-text); margin: 4px 0 0; }
-  .sd-summary__value--green{ color: var(--wa-green); }
   .sd-summary__value--amber{ color: #B8860B; }
 
   .sd-net-band{
@@ -119,10 +118,6 @@
     <div class="sd-summary__card">
       <p class="sd-summary__label">Half days</p>
       <p class="sd-summary__value">{{ half_days }}</p>
-    </div>
-    <div class="sd-summary__card">
-      <p class="sd-summary__label">Earned</p>
-      <p class="sd-summary__value sd-summary__value--green">&#8377;{{ earned }}</p>
     </div>
     <div class="sd-summary__card">
       <p class="sd-summary__label">Advances taken</p>
