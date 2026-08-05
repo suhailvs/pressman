@@ -147,7 +147,7 @@
 {% block page_content %}
   <div class="staff-section-label">Today &middot; {{ today|date:"j M" }}</div>
   {% for s in staff_today %}
-    <a href="#" class="staff-row">
+    <a href="{% url 'staff_detail' s.id %}" class="staff-row">
       <div class="staff-avatar" style="background: {{ s.color }};">{{ s.name|first|upper }}</div>
       <div class="staff-row__body">
         <p class="staff-row__name">{{ s.name }}</p>
@@ -188,7 +188,7 @@
     <div class="qa-sheet__handle"></div>
     <p class="qa-sheet__title" id="qaSheetTitle">Quick actions</p>
 
-    <a href="{% url 'mark_attendance' %}" class="qa-item">
+    <a href="{% url 'mark_attendance' %}?day_type=full" class="qa-item">
       <span class="qa-item__icon qa-item__icon--attendance">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
           <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -197,8 +197,22 @@
         </svg>
       </span>
       <span class="qa-item__body">
-        <p class="qa-item__title">Mark attendance</p>
-        <p class="qa-item__sub">Full day or half day for today</p>
+        <p class="qa-item__title">Mark full day</p>
+        <p class="qa-item__sub">Mark today as a full day for you</p>
+      </span>
+    </a>
+
+    <a href="{% url 'mark_attendance' %}?day_type=half" class="qa-item">
+      <span class="qa-item__icon qa-item__icon--attendance">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
+          <path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                d="M12 2v20M2 12h20"/>
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </span>
+      <span class="qa-item__body">
+        <p class="qa-item__title">Mark half day</p>
+        <p class="qa-item__sub">Mark today as a half day for you</p>
       </span>
     </a>
 

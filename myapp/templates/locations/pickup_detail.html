@@ -132,6 +132,9 @@
     <div class="detail__section items-section">
       <div class="items-section__header">
         <span class="detail__row-label">Items ({{ pickup_items|length }})</span>
+        {% if total_qty %}
+          <span class="badge rounded-pill text-bg-success">{{ total_qty }} pcs</span>
+        {% endif %}
         <div class="items-section__add-group">
           <button type="button" class="items-section__add items-section__add--iron"
                   data-category="i" data-label="Ironing"

@@ -69,6 +69,47 @@ def location_map(request):
     locations = Location.objects.filter(is_active=True).exclude(latitude__isnull=True).exclude(longitude__isnull=True)
     return render(request, "locations/location_map.html", {"locations": locations})
 
+
+def _date_group_label(d, today):
+    delta = (today - d).days
+    if delta == 0:
+        return "Today"
+    if delta == 1:
+        return "Yesterday"
+    if 2 <= delta <= 6:
+        return d.strftime("%A")  # e.g. "Sunday"
+    return d.strftime("%b %d, %Y")  # e.g. "Jul 28, 2026"
+
+@login_required
+def all_pickups(request):
+    show_all = request.GET.get("show_all") == "1"
+    pickups_qs = (
+        Pickup.objects.select_related("location")
+        .exclude(status=Pickup.STATUS_CANCELLED)
+        .order_by("-created_at")
+    )
+    if not show_all:
+        pickups_qs = pickups_qs.exclude(status=Pickup.STATUS_DELIVERED)
+
+    paginator = Paginator(pickups_qs, 50)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    today = timezone.localdate()
+    grouped_pickups = [
+        {"label": _date_group_label(created_date, today), "pickups": list(items)}
+        for created_date, items in groupby(
+            page_obj.object_list,
+            key=lambda p: timezone.localtime(p.created_at).date(),
+        )
+    ]
+
+    return render(request, "locations/all_pickups.html", {
+        "pickups": page_obj,
+        "page_obj": page_obj,
+        "show_all": show_all,
+        "grouped_pickups": grouped_pickups,
+    })
+    
 @login_required
 def pickup_detail(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
@@ -91,6 +132,8 @@ def pickup_detail(request, pk):
         form = PickupForm(instance=pickup)
         show_edit_modal = False
 
+    pickup_items = pickup.items.select_related("item").all()
+    total_qty = pickup_items.aggregate(total=Sum("quantity"))["total"] or 0
     return render(request, "locations/pickup_detail.html", {
         "pickup": pickup,
         "location": pickup.location,
@@ -98,7 +141,8 @@ def pickup_detail(request, pk):
         "show_edit_modal": show_edit_modal,
         "dry_items": Item.objects.filter(item_category=Item.CATEGORY_DRYCLEANING),
         "iron_items": Item.objects.filter(item_category=Item.CATEGORY_IRONING),
-        "pickup_items": pickup.items.select_related("item").all(),
+        "pickup_items": pickup_items,
+        "total_qty": total_qty,
     })
  
 @login_required
@@ -184,47 +228,7 @@ def mark_pickup_paid(request, pk):
             messages.error(request, "Select a payment method and enter a valid amount.")
     return redirect("pickup_detail", pk=pickup.pk)
 
-
-def _date_group_label(d, today):
-    delta = (today - d).days
-    if delta == 0:
-        return "Today"
-    if delta == 1:
-        return "Yesterday"
-    if 2 <= delta <= 6:
-        return d.strftime("%A")  # e.g. "Sunday"
-    return d.strftime("%b %d, %Y")  # e.g. "Jul 28, 2026"
-
-@login_required
-def all_pickups(request):
-    show_all = request.GET.get("show_all") == "1"
-    pickups_qs = (
-        Pickup.objects.select_related("location")
-        .exclude(status=Pickup.STATUS_CANCELLED)
-        .order_by("-created_at")
-    )
-    if not show_all:
-        pickups_qs = pickups_qs.exclude(status=Pickup.STATUS_DELIVERED)
-
-    paginator = Paginator(pickups_qs, 50)
-    page_obj = paginator.get_page(request.GET.get("page"))
-
-    today = timezone.localdate()
-    grouped_pickups = [
-        {"label": _date_group_label(created_date, today), "pickups": list(items)}
-        for created_date, items in groupby(
-            page_obj.object_list,
-            key=lambda p: timezone.localtime(p.created_at).date(),
-        )
-    ]
-
-    return render(request, "locations/all_pickups.html", {
-        "pickups": page_obj,
-        "page_obj": page_obj,
-        "show_all": show_all,
-        "grouped_pickups": grouped_pickups,
-    })
-    
+   
 @login_required
 def quick_add_pickup(request, pk):
     location = get_object_or_404(Location, pk=pk)
@@ -345,6 +349,8 @@ def mark_attendance(request):
         return redirect('staff_list')
     employee = request.user.employee
     day_type = request.GET.get('day_type', 'full')
+    if day_type not in ('full', 'half'):
+        day_type = 'full'
     obj, created = Attendance.objects.get_or_create(
         employee=employee,
         date=timezone.localdate(),
@@ -354,7 +360,7 @@ def mark_attendance(request):
         messages.error(request, 'Already marked for today')
         return redirect('staff_list')
     label = 'Full day' if day_type == 'full' else 'Half day'
-    messages.success(request, f'Marked {employee.name} as {label}.')
+    messages.success(request, f'Marked {employee.user.first_name} as {label}.')
     return redirect('staff_list')
 
 @login_required

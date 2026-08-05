@@ -87,12 +87,6 @@
   .adv-row__note{ font-size: 0.9rem; color: var(--wa-text); margin: 0; }
   .adv-row__date{ font-size: 0.78rem; color: var(--wa-text-muted); margin: 2px 0 0; }
   .adv-row__amount{ font-weight: 700; color: var(--wa-text); font-size: 0.95rem; }
-  .adv-badge{
-    font-size: 0.7rem; font-weight: 600; padding: 3px 8px; border-radius: 10px;
-    margin-left: 8px; vertical-align: middle;
-  }
-  .adv-badge--pending{ background: var(--wa-border); color: var(--wa-text-muted); }
-  .adv-badge--approved{ background: #E4F5EE; color: var(--wa-green); }
 
   .sd-empty{ padding: 24px 16px; text-align: center; color: var(--wa-text-muted); font-size: 0.9rem; }
 {% endblock %}
@@ -136,14 +130,6 @@
     </div>
   </div>
 
-  {% if pending_advance %}
-    <div style="padding: 0 16px 10px;">
-      <p style="font-size:0.82rem; color:#B8860B; margin:0;">
-        &#8377;{{ pending_advance }} of this is still awaiting approval.
-      </p>
-    </div>
-  {% endif %}
-
   <div class="sd-net-band">
     <div>
       <p class="sd-net-band__label">Net payable this month</p>
@@ -181,11 +167,6 @@
       <div>
         <p class="adv-row__note">
           {{ a.note|default:"Advance" }}
-          {% if a.approved %}
-            <span class="adv-badge adv-badge--approved">Approved</span>
-          {% else %}
-            <span class="adv-badge adv-badge--pending">Pending</span>
-          {% endif %}
         </p>
         <p class="adv-row__date">{{ a.date|date:"j M" }}</p>
       </div>
