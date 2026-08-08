@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Location,User, Pickup, PickupItem, Item, Employee, Advance, Attendance
+from .models import Location,User, Pickup, PickupItem, Item, Employee, Advance, Attendance, GeneralSettings
+admin.site.register(GeneralSettings)
 admin.site.register(User,UserAdmin)
 admin.site.register(Location)
 admin.site.register(Pickup)

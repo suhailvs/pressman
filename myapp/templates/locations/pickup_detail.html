@@ -217,9 +217,8 @@
 
             <div class="field">
               <label class="field__label" for="paid-amount">Amount</label>
-              <input type="number" step="1" min="0" id="paid-amount" name="amount"
-                     class="field__input" placeholder="0"
-                     value="{{ pickup.amount_paid|default:pickup.items_total }}">
+              <input type="number" step="1" min="0" id="paid-amount" name="amount" class="field__input" placeholder="0"
+                value="{% if pickup.amount_paid == 0 %}{% elif pickup.amount_paid %}{{ pickup.amount_paid }}{% else %}{{ pickup.items_total }}{% endif %}">
             </div>
           </div>
 
