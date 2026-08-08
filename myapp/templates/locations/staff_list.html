@@ -98,6 +98,12 @@
 
 {% block chat_header_title %}Staff:{{ request.user.first_name }}{% endblock %}
 {% block chat_header_actions %}
+  <button class="icon-btn" type="button" data-bs-toggle="modal" data-bs-target="#changePasswordModal" aria-label="Change password">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>
+  </button>
   <form method="post" action="{% url 'logout' %}" class="logout-form">
     {% csrf_token %}
     <button class="icon-btn" type="submit" aria-label="Log out">
@@ -172,19 +178,43 @@
       {% endif %}
     </a>
   {% endfor %}
-
-  <div class="staff-section-label">This month</div>
-  {% for s in staff_month %}
-    <a href="{% url 'staff_detail' s.id %}" class="staff-row">
-      <div class="staff-avatar" style="background: {{ s.color }};">{{ s.name|first|upper }}</div>
-      <div class="staff-row__body">
-        <p class="staff-row__name">{{ s.name }}</p>
-        <p class="staff-row__sub">{{ s.full_days }} full &middot; {{ s.half_days }} half &middot; &#8377;{{ s.advance }} advance</p>
+  {% if request.user.is_staff %}
+    <div class="staff-section-label">This month</div>
+    {% for s in staff_month %}
+      <a href="{% url 'staff_detail' s.id %}" class="staff-row">
+        <div class="staff-avatar" style="background: {{ s.color }};">{{ s.name|first|upper }}</div>
+        <div class="staff-row__body">
+          <p class="staff-row__name">{{ s.name }}</p>
+          <p class="staff-row__sub">{{ s.full_days }} full &middot; {{ s.half_days }} half &middot; &#8377;{{ s.advance }} advance</p>
+        </div>
+        <div class="staff-row__meta">
+          <p class="staff-row__net-label">Net</p>
+          <p class="staff-row__net-value">&#8377;{{ s.net }}</p>
+        </div>
+      </a>
+    {% endfor %}
+  {% endif %}
+  <!-- Change password modal -->
+  <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form method="post" action="{% url 'change_password' %}">
+          {% csrf_token %}
+          <div class="modal-header wa-modal__header">
+            <h5 class="modal-title" id="changePasswordLabel">Change password</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1) grayscale(100%) brightness(200%);"></button>
+          </div>
+          <div class="modal-body">
+            <div class="field">
+              <label class="field__label" for="new_password">Enter new password</label>
+              <input type="password" class="field__input" id="new_password" name="new_password" autocomplete="new-password">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="save-btn">Update password</button>
+          </div>
+        </form>
       </div>
-      <div class="staff-row__meta">
-        <p class="staff-row__net-label">Net</p>
-        <p class="staff-row__net-value">&#8377;{{ s.net }}</p>
-      </div>
-    </a>
-  {% endfor %}
+    </div>
+  </div>
 {% endblock %}

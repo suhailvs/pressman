@@ -2,6 +2,10 @@ import re
 import calendar
 import requests
 from itertools import groupby
+from functools import wraps
+
+from django.contrib.auth import update_session_auth_hash
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.contrib.auth.views import LoginView
@@ -16,6 +20,11 @@ from .models import Location, Pickup, PickupItem, Item, Employee, Attendance, Ad
 
 TELEGRAM_BOT_TOKEN = "8574559583:AAG7tRjCSCbW4DkQx3P4a3X44Wp9Ba7RKB4"
 TELEGRAM_CHAT_ID = -5579934168
+# Cycled avatar colors so each employee gets a stable-ish color by id.
+AVATAR_COLORS = ['#128C7E', '#3A7CA5', '#C0533A', '#6B4FA8', '#B8860B', '#4C7A3D']
+ 
+def _avatar_color(employee_id):
+    return AVATAR_COLORS[employee_id % len(AVATAR_COLORS)]
 
 def _telegram_enabled(key):
     return GeneralSettings.objects.filter(key=key, value='t').exists()
@@ -31,8 +40,41 @@ def _send_telegram(text):
     except requests.RequestException:
         pass
 
+def staff_required(view_func):
+    """Like @login_required, but also requires request.user.is_staff."""
+    @wraps(view_func)
+    @login_required
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_staff:
+            raise PermissionDenied
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+def _date_group_label(d, today):
+    delta = (today - d).days
+    if delta == 0:
+        return "Today"
+    if delta == 1:
+        return "Yesterday"
+    if 2 <= delta <= 6:
+        return d.strftime("%A")  # e.g. "Sunday"
+    return d.strftime("%b %d, %Y")  # e.g. "Jul 28, 2026"
+
+@login_required
+def change_password(request):
+    if request.method == "POST":
+        new_password = request.POST.get("new_password", "")
+        request.user.set_password(new_password)
+        request.user.save()
+        update_session_auth_hash(request, request.user)  # keeps the user logged in
+        messages.success(request, "Password updated.")
+    return redirect('staff_list')
+
 @login_required
 def home(request):
+    if not request.user.is_staff:
+        return redirect('staff_list')
     locations = Location.objects.filter(is_active=True).order_by("name")
     return render(request, "locations/location_list.html", {"locations": locations})
 
@@ -40,7 +82,7 @@ class LocationsLoginView(LoginView):
     template_name = "locations/login.html"
     redirect_authenticated_user = True
 
-@login_required
+@staff_required
 def location_create(request):
     if request.method == "POST":
         form = LocationForm(request.POST, request.FILES)
@@ -52,7 +94,7 @@ def location_create(request):
         form = LocationForm()
     return render(request, "locations/add_location.html", {"form": form})
 
-@login_required
+@staff_required
 def location_detail(request, pk):
     location = get_object_or_404(Location, pk=pk)
 
@@ -64,7 +106,7 @@ def location_detail(request, pk):
     pickups = location.pickups.exclude(status=Pickup.STATUS_CANCELLED).order_by("-created_at")
     return render(request, "locations/view_location.html", {"location": location,"pickups": pickups})
 
-@login_required
+@staff_required
 def location_edit(request, pk):
     location = get_object_or_404(Location, pk=pk)
 
@@ -81,23 +123,12 @@ def location_edit(request, pk):
         request, "locations/edit_location.html", {"form": form, "location": location}
     )
 
-@login_required
+@staff_required
 def location_map(request):
     locations = Location.objects.filter(is_active=True).exclude(latitude__isnull=True).exclude(longitude__isnull=True)
     return render(request, "locations/location_map.html", {"locations": locations})
 
-
-def _date_group_label(d, today):
-    delta = (today - d).days
-    if delta == 0:
-        return "Today"
-    if delta == 1:
-        return "Yesterday"
-    if 2 <= delta <= 6:
-        return d.strftime("%A")  # e.g. "Sunday"
-    return d.strftime("%b %d, %Y")  # e.g. "Jul 28, 2026"
-
-@login_required
+@staff_required
 def all_pickups(request):
     show_delivered = request.GET.get("show_delivered") == "1"
     pickups_qs = Pickup.objects.select_related("location").exclude(
@@ -133,7 +164,7 @@ def all_pickups(request):
         "grouped_pickups": grouped_pickups,
     })
     
-@login_required
+@staff_required
 def pickup_detail(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
 
@@ -168,7 +199,7 @@ def pickup_detail(request, pk):
         "total_qty": total_qty,
     })
  
-@login_required
+@staff_required
 def add_pickup_items(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
     item_names = request.POST.getlist("item_name")
@@ -211,7 +242,7 @@ def add_pickup_items(request, pk):
     return redirect("pickup_detail", pk=pickup.pk)
  
  
-@login_required
+@staff_required
 def remove_pickup_item(request, pk):
     pickup_item = get_object_or_404(PickupItem, pk=pk)
     pickup_pk = pickup_item.pickup.pk
@@ -219,7 +250,7 @@ def remove_pickup_item(request, pk):
     messages.success(request, "Item removed.")
     return redirect("pickup_detail", pk=pickup_pk)
 
-@login_required
+@staff_required
 def create_item(request):
     pickup_pk = request.POST["pickup_pk"] # used to redirect back to the pickup detail page
     name = re.sub(r"\s+","_",request.POST["name"].strip().lower())
@@ -231,7 +262,7 @@ def create_item(request):
     messages.success(request, "Item created.")
     return redirect("pickup_detail", pk=pickup_pk)
 
-@login_required
+@staff_required
 def mark_pickup_paid(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
     if request.method == "POST":
@@ -261,7 +292,7 @@ def mark_pickup_paid(request, pk):
     return redirect("pickup_detail", pk=pickup.pk)
 
    
-@login_required
+@staff_required
 def quick_add_pickup(request, pk):
     location = get_object_or_404(Location, pk=pk)
     pickup = Pickup.objects.create(location=location)
@@ -277,7 +308,7 @@ def quick_add_pickup(request, pk):
     messages.success(request, "Pickup created.")
     return redirect("all_pickups")
 
-@login_required
+@staff_required
 def set_pickup_status(request, pk, status):
     if status not in (Pickup.STATUS_PICKED_UP, Pickup.STATUS_DELIVERED):
         return redirect(request.META.get("HTTP_REFERER", "all_pickups"))
@@ -301,16 +332,8 @@ def set_pickup_status(request, pk, status):
         )
     messages.success(request, f"Marked as {pickup.get_status_display()}.")
     return redirect(request.META.get("HTTP_REFERER", "all_pickups"))
-
-
-# Cycled avatar colors so each employee gets a stable-ish color by id.
-AVATAR_COLORS = ['#128C7E', '#3A7CA5', '#C0533A', '#6B4FA8', '#B8860B', '#4C7A3D']
  
- 
-def _avatar_color(employee_id):
-    return AVATAR_COLORS[employee_id % len(AVATAR_COLORS)]
- 
-@login_required 
+@login_required
 def staff_list(request):
     today = timezone.localdate()
     employees = Employee.objects.filter(is_active=True).order_by('user__first_name')
@@ -407,7 +430,8 @@ def add_advance(request):
 @login_required
 def staff_detail(request, pk):
     employee = get_object_or_404(Employee, pk=pk)
-
+    if not request.user.is_staff and employee.user_id != request.user.id:
+        raise PermissionDenied
     today = timezone.localdate()
     try:
         year = int(request.GET.get('year', today.year))

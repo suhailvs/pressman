@@ -29,7 +29,7 @@ urlpatterns = [
     # path('staff/<int:employee_id>/', views.staff_detail, name='staff_detail'),
     
     path("backup/", views.backup_media, name="backup_media"),
-    
+    path('change-password/', views.change_password, name='change_password'),
     path("login/", views.LocationsLoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(next_page="login"), name="logout"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
