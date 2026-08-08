@@ -8,7 +8,7 @@ from django.contrib.auth.views import LoginView
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Sum
+from django.db.models import Sum, F
 from datetime import date,time
 
 from .forms import LocationForm,PickupForm
@@ -82,31 +82,37 @@ def _date_group_label(d, today):
 
 @login_required
 def all_pickups(request):
-    show_all = request.GET.get("show_all") == "1"
-    pickups_qs = (
-        Pickup.objects.select_related("location")
-        .exclude(status=Pickup.STATUS_CANCELLED)
-        .order_by("-created_at")
+    show_delivered = request.GET.get("show_delivered") == "1"
+    pickups_qs = Pickup.objects.select_related("location").exclude(
+        status=Pickup.STATUS_CANCELLED
     )
-    if not show_all:
-        pickups_qs = pickups_qs.exclude(status=Pickup.STATUS_DELIVERED)
+    if show_delivered:
+        pickups_qs = pickups_qs.filter(status=Pickup.STATUS_DELIVERED).order_by(
+            F("delivered_at").desc(nulls_last=True)
+        )
+    else:
+        pickups_qs = pickups_qs.exclude(status=Pickup.STATUS_DELIVERED).order_by(
+            "-created_at"
+        )
 
     paginator = Paginator(pickups_qs, 50)
     page_obj = paginator.get_page(request.GET.get("page"))
 
     today = timezone.localdate()
+
+    def group_date(p):
+        dt = p.delivered_at if (show_delivered and p.delivered_at) else p.created_at
+        return timezone.localtime(dt).date()
+
     grouped_pickups = [
-        {"label": _date_group_label(created_date, today), "pickups": list(items)}
-        for created_date, items in groupby(
-            page_obj.object_list,
-            key=lambda p: timezone.localtime(p.created_at).date(),
-        )
+        {"label": _date_group_label(d, today), "pickups": list(items)}
+        for d, items in groupby(page_obj.object_list, key=group_date)
     ]
 
     return render(request, "locations/all_pickups.html", {
         "pickups": page_obj,
         "page_obj": page_obj,
-        "show_all": show_all,
+        "show_delivered": show_delivered,
         "grouped_pickups": grouped_pickups,
     })
     
@@ -213,17 +219,19 @@ def mark_pickup_paid(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
     if request.method == "POST":
         method = request.POST.get("payment_method")
-        amount = (request.POST.get("amount") or "").strip()
-        try:
-            amount = int(float(amount)) if amount else None
-        except ValueError:
-            amount = None
+        amount = request.POST.get("amount") or ""
+        amount = int(float(amount)) if amount.strip() else None
         if method in (Pickup.PAYMENT_UPI, Pickup.PAYMENT_CASH) and amount is not None:
             pickup.payment_method = method
             pickup.amount_paid = amount
             pickup.paid_at = timezone.now()
+            if pickup.status != Pickup.STATUS_DELIVERED:
+                pickup.status = Pickup.STATUS_DELIVERED
+                pickup.delivered_at = timezone.now()
+                messages.success(request, f"Marked paid via {pickup.get_payment_method_display()} and delivered.")
+            else:
+                messages.success(request, f"Marked paid via {pickup.get_payment_method_display()}.")
             pickup.save()
-            messages.success(request, f"Marked paid via {pickup.get_payment_method_display()}.")
         else:
             messages.error(request, "Select a payment method and enter a valid amount.")
     return redirect("pickup_detail", pk=pickup.pk)

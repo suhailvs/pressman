@@ -28,10 +28,9 @@
     </div>
   </div>
 
-  <!-- Status filter: unticked shows pending only (default), ticked shows all -->
   <label class="show-all-toggle">
-    <input type="checkbox" id="show-all-checkbox" {% if show_all %}checked{% endif %}>
-    Show all statuses
+    <input type="checkbox" id="show-all-checkbox" {% if show_delivered %}checked{% endif %}>
+    Show delivered only
   </label>
 
   <!-- Pickup list -->
@@ -74,7 +73,13 @@
       <div class="chat-row__body">
         <div class="chat-row__top">
           <span class="chat-row__name">{{ pickup.location.name }}</span>
-          <span class="chat-row__time">{{ pickup.created_at|date:"M j, g:i A" }}</span>
+          <span class="chat-row__time">
+            {% if show_delivered and pickup.delivered_at %}
+              {{ pickup.delivered_at|date:"M j, g:i A" }}
+            {% else %}
+              {{ pickup.created_at|date:"M j, g:i A" }}
+            {% endif %}
+          </span>
         </div>
         <div class="chat-row__bottom">
           <span class="chat-row__preview">
@@ -84,7 +89,7 @@
         </div>
       </div>
 
-      {% if pickup.status != 'delivered' %}
+      {% if not show_delivered and pickup.status != 'delivered' %}
       <div class="chat-row__quick-actions">
         {% if pickup.status != 'picked_up' %}
         <form method="post" action="{% url 'set_pickup_status' pickup.pk 'picked_up' %}" onclick="event.stopPropagation()">
@@ -112,12 +117,12 @@
     {% endfor %}
     {% empty %}
       <div class="chat-empty">
-        {% if show_all %}
-          <p class="chat-empty__title">No pickups yet</p>
-          <p class="chat-empty__text">Pickups added across all locations will show up here.</p>
+        {% if show_delivered %}
+          <p class="chat-empty__title">No delivered pickups</p>
+          <p class="chat-empty__text">Pickups you mark as delivered will show up here.</p>
         {% else %}
           <p class="chat-empty__title">No pending pickups</p>
-          <p class="chat-empty__text">Tick "Show all statuses" to see picked up, delivered, or cancelled pickups too.</p>
+          <p class="chat-empty__text">Tick "Show delivered" to see delivered pickups.</p>
         {% endif %}
       </div>
     {% endfor %}
@@ -133,7 +138,7 @@
   {% if page_obj.paginator.num_pages > 1 %}
   <nav class="pagination" aria-label="Pickup pages">
     {% if page_obj.has_previous %}
-      <a href="?show_all={{ show_all|yesno:'1,0' }}&page={{ page_obj.previous_page_number }}" class="pagination__btn">
+      <a href="?show_delivered={{ show_delivered|yesno:'1,0' }}&page={{ page_obj.previous_page_number }}" class="pagination__btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M15 18l-6-6 6-6"/>
         </svg>
@@ -316,8 +321,8 @@
 
   document.getElementById("show-all-checkbox").addEventListener("change", function () {
     const url = new URL(window.location.href);
-    url.searchParams.set("show_all", this.checked ? "1" : "0");
-    url.searchParams.delete("page"); // reset to page 1 when the filter changes
+    url.searchParams.set("show_delivered", this.checked ? "1" : "0");
+    url.searchParams.delete("page");
     window.location.href = url.toString();
   });
 </script>
