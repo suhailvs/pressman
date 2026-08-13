@@ -154,7 +154,7 @@
     <span class="pagination__label">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
 
     {% if page_obj.has_next %}
-      <a href="?show_all={{ show_all|yesno:'1,0' }}&page={{ page_obj.next_page_number }}" class="pagination__btn">
+      <a href="?show_delivered={{ show_delivered|yesno:'1,0' }}&page={{ page_obj.next_page_number }}" class="pagination__btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 18l6-6-6-6"/>
         </svg>

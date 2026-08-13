@@ -584,6 +584,10 @@ class MarkPickupPaidViewTests(AuthenticatedViewTestCase):
         self.assertEqual(response.status_code, 302)  # redirects rather than 500
         self.pickup.refresh_from_db()
         self.assertFalse(self.pickup.is_paid)
+        self.assertIsNone(self.pickup.payment_method)
+        self.assertIsNone(self.pickup.amount_paid)
+        self.assertIsNone(self.pickup.paid_at)
+        self.assertEqual(self.pickup.status, Pickup.STATUS_PENDING)
 
 
 # ---------------------------------------------------------------------------
@@ -638,6 +642,13 @@ class QuickAddPickupViewTests(AuthenticatedViewTestCase):
         self.assertEqual(pickup.status, Pickup.STATUS_PENDING)
         self.assertIsNone(pickup.picked_up_at)
         mock_post.assert_called_once()
+
+    @patch("myapp.views._telegram_enabled", return_value=False)
+    @patch("myapp.views.requests.post")
+    def test_skips_telegram_when_disabled(self, mock_post, mock_enabled):
+        response = self.client.post(reverse("quick_add_pickup", args=[self.location.pk]))
+        self.assertRedirects(response, reverse("all_pickups"))
+        mock_post.assert_not_called()
 
     @patch("myapp.views._telegram_enabled", return_value=True)
     @patch("myapp.views.requests.post")
