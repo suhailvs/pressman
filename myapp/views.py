@@ -273,7 +273,10 @@ def mark_pickup_paid(request, pk):
     if request.method == "POST":
         method = request.POST.get("payment_method")
         amount = request.POST.get("amount") or ""
-        amount = int(float(amount)) if amount.strip() else None
+        try:
+            amount = int(float(amount)) if amount.strip() else None
+        except (TypeError, ValueError):
+            amount = None
         if method in (Pickup.PAYMENT_UPI, Pickup.PAYMENT_CASH) and amount is not None:
             pickup.payment_method = method
             pickup.amount_paid = amount
