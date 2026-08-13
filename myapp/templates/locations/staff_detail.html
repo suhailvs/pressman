@@ -18,7 +18,34 @@
     flex-shrink: 0;
   }
   .sd-hero__name{ font-size: 1.15rem; font-weight: 700; color: var(--wa-text); margin: 0; }
+  .sd-hero__wage-row{ display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .sd-hero__wage{ font-size: 0.85rem; color: var(--wa-text-muted); margin: 2px 0 0; }
+
+  /* Inline wage editor (staff only) — pure CSS show/hide via hidden checkbox */
+  .sd-wage-edit-checkbox{ display: none; }
+  .sd-wage-edit-btn{
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    color: var(--wa-green); background: var(--wa-bg);
+    cursor: pointer; flex-shrink: 0;
+  }
+  .sd-wage-edit-btn:active{ background: var(--wa-border); }
+  .sd-wage-edit-form{
+    display: none; align-items: center; gap: 6px;
+    width: 100%; margin-top: 8px;
+  }
+  .sd-wage-edit-checkbox:checked ~ .sd-wage-edit-form{ display: flex; }
+  .sd-wage-edit-checkbox:checked ~ .sd-wage-edit-btn{ background: var(--wa-border); }
+  .sd-wage-edit-input{
+    border: 1.5px solid var(--wa-border); border-radius: 8px;
+    padding: 6px 10px; font-size: 0.9rem; width: 110px;
+  }
+  .sd-wage-edit-input:focus{ outline: none; border-color: var(--wa-green); }
+  .sd-wage-edit-save{
+    background: var(--wa-green); color: #fff; border: none;
+    border-radius: 8px; padding: 7px 14px; font-size: 0.85rem; font-weight: 600;
+  }
+  .sd-wage-edit-save:active{ background: var(--wa-green-dark); }
 
   .sd-month-nav{
     display: flex; align-items: center; justify-content: space-between;
@@ -56,11 +83,17 @@
     color: var(--wa-text-muted); text-transform: uppercase;
     background: #fff;
   }
+  .sd-section-hint{
+    padding: 0 16px 8px; margin: 0;
+    font-size: 0.78rem; color: var(--wa-text-muted); background: #fff;
+  }
 
   .sd-calendar{
     display: grid; grid-template-columns: repeat(7, 1fr);
     gap: 6px; padding: 10px 16px 16px; background: #fff;
   }
+  /* Wrapping a day button in a form without breaking the grid */
+  .sd-day-form{ display: contents; }
   .sd-day{
     aspect-ratio: 1; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
@@ -68,6 +101,11 @@
     background: var(--wa-bg);
     position: relative;
   }
+  button.sd-day{
+    border: none; font-family: inherit; cursor: pointer; padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button.sd-day:active{ opacity: 0.75; }
   .sd-day--full{ background: #E4F5EE; color: var(--wa-green); }
   .sd-day--half{ background: #FDF0DA; color: #B8860B; }
   .sd-day--today{ box-shadow: inset 0 0 0 2px var(--wa-accent); }
@@ -85,7 +123,15 @@
   }
   .adv-row__note{ font-size: 0.9rem; color: var(--wa-text); margin: 0; }
   .adv-row__date{ font-size: 0.78rem; color: var(--wa-text-muted); margin: 2px 0 0; }
+  .adv-row__right{ display: flex; align-items: center; gap: 10px; }
   .adv-row__amount{ font-weight: 700; color: var(--wa-text); font-size: 0.95rem; }
+  .adv-row__delete-form{ margin: 0; }
+  .adv-row__delete{
+    display: flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #FDEAEA; color: var(--wa-danger); border: none; flex-shrink: 0;
+  }
+  .adv-row__delete:active{ background: #F8D0D0; }
 
   .sd-empty{ padding: 24px 16px; text-align: center; color: var(--wa-text-muted); font-size: 0.9rem; }
 {% endblock %}
@@ -94,9 +140,30 @@
 {% block page_content %}
   <div class="sd-hero">
     <div class="sd-avatar">{{ employee.user.first_name|first|upper }}</div>
-    <div>
+    <div style="flex:1; min-width:0;">
       <p class="sd-hero__name">{{ employee.user.first_name }}</p>
-      <p class="sd-hero__wage">&#8377;{{ employee.daily_wage }}/day &middot; {% if employee.is_active %}Active{% else %}Inactive{% endif %}</p>
+      <div class="sd-hero__wage-row">
+        <p class="sd-hero__wage">&#8377;{{ employee.daily_wage }}/day &middot; {% if employee.is_active %}Active{% else %}Inactive{% endif %}</p>
+
+        {% if request.user.is_staff %}
+          <input type="checkbox" id="wage-edit-toggle" class="sd-wage-edit-checkbox">
+          <label for="wage-edit-toggle" class="sd-wage-edit-btn" aria-label="Edit daily wage">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"/>
+              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+            </svg>
+          </label>
+
+          <form method="post" action="{% url 'update_wage' employee.pk %}" class="sd-wage-edit-form">
+            {% csrf_token %}
+            <input type="hidden" name="year" value="{{ year }}">
+            <input type="hidden" name="month" value="{{ month }}">
+            <input type="number" step="0.01" min="0" name="daily_wage"
+                   value="{{ employee.daily_wage }}" class="sd-wage-edit-input" required>
+            <button type="submit" class="sd-wage-edit-save">Save</button>
+          </form>
+        {% endif %}
+      </div>
     </div>
   </div>
 
@@ -133,6 +200,9 @@
   </div>
 
   <div class="sd-section-label">Attendance</div>
+  {% if request.user.is_staff %}
+    <p class="sd-section-hint">Tap a day to cycle: empty &rarr; full &rarr; half &rarr; empty.</p>
+  {% endif %}
   <div class="sd-calendar">
     <div class="sd-day-head">Su</div>
     <div class="sd-day-head">Mo</div>
@@ -145,6 +215,18 @@
     {% for d in calendar_days %}
       {% if d is None %}
         <div class="sd-day sd-day--blank"></div>
+      {% elif request.user.is_staff and not d.is_future %}
+        <form method="post"
+              action="{% url 'toggle_attendance' employee.pk year month d.day %}"
+              class="sd-day-form">
+          {% csrf_token %}
+          <button type="submit" class="sd-day
+            {% if d.status == 'full' %}sd-day--full{% elif d.status == 'half' %}sd-day--half{% endif %}
+            {% if d.is_today %}sd-day--today{% endif %}"
+            aria-label="Toggle attendance for {{ d.date|date:'j M' }}">
+            {{ d.day }}
+          </button>
+        </form>
       {% else %}
         <div class="sd-day
           {% if d.status == 'full' %}sd-day--full{% elif d.status == 'half' %}sd-day--half{% endif %}
@@ -165,7 +247,24 @@
         </p>
         <p class="adv-row__date">{{ a.date|date:"j M" }}</p>
       </div>
-      <div class="adv-row__amount">&#8377;{{ a.amount }}</div>
+      <div class="adv-row__right">
+        <div class="adv-row__amount">&#8377;{{ a.amount }}</div>
+        {% if request.user.is_staff %}
+        <form method="post" action="{% url 'delete_advance' employee.pk a.pk %}"
+              class="adv-row__delete-form"
+              onsubmit="return confirm('Remove this advance of ₹{{ a.amount }}?');">
+          {% csrf_token %}
+          <button type="submit" class="adv-row__delete" aria-label="Remove advance">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/><path d="M14 11v6"/>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+          </button>
+        </form>
+        {% endif %}
+      </div>
     </div>
   {% empty %}
     <div class="sd-empty">No advances recorded this month.</div>

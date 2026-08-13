@@ -109,6 +109,8 @@ class Employee(models.Model):
     # name = models.CharField(max_length=100)
     daily_wage = models.PositiveIntegerField()
     is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     def __str__(self):
         return f"{self.user.get_full_name()} ({self.user.username})"
  
@@ -118,6 +120,8 @@ class Advance(models.Model):
     date = models.DateField(default=timezone.localdate)
     note = models.CharField(max_length=200, blank=True)
     approved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     def __str__(self):
         return f"{self.employee.user.get_full_name()} - {self.amount} on {self.date}"
     
@@ -127,7 +131,8 @@ class Attendance(models.Model):
     date = models.DateField(default=timezone.localdate)
     day_type = models.CharField(max_length=4, choices=DAY_TYPE_CHOICES, default='full')
     marked_at = models.DateTimeField(auto_now_add=True)
-    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     class Meta:
         unique_together = ('employee', 'date')
     def __str__(self):

@@ -4,6 +4,7 @@ import requests
 from itertools import groupby
 from functools import wraps
 
+from datetime import date,time
 from django.contrib.auth import update_session_auth_hash
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
@@ -13,7 +14,7 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Sum, F
-from datetime import date,time
+from django.urls import reverse
 
 from .forms import LocationForm,PickupForm
 from .models import Location, Pickup, PickupItem, Item, Employee, Attendance, Advance, GeneralSettings
@@ -509,6 +510,71 @@ def staff_detail(request, pk):
         'is_current_month': is_current_month,
     }
     return render(request, 'locations/staff_detail.html', context)
+
+
+def _back_to_month(pk, year, month):
+    return redirect(f"{reverse('staff_detail', args=[pk])}?year={year}&month={month}")
+ 
+ 
+@login_required
+def toggle_attendance(request, pk, year, month, day):
+    """Cycle a single day's attendance: none -> full -> half -> none."""
+    if not request.user.is_staff:
+        raise PermissionDenied
+ 
+    employee = get_object_or_404(Employee, pk=pk)
+ 
+    try:
+        day_date = date(int(year), int(month), int(day))
+    except ValueError:
+        raise PermissionDenied
+ 
+    if day_date > timezone.localdate():
+        # Can't mark attendance for a day that hasn't happened yet.
+        return _back_to_month(pk, year, month)
+ 
+    attendance = Attendance.objects.filter(employee=employee, date=day_date).first()
+ 
+    if attendance is None:
+        Attendance.objects.create(employee=employee, date=day_date, day_type='full')
+    elif attendance.day_type == 'full':
+        attendance.day_type = 'half'
+        attendance.save(update_fields=['day_type'])
+    else:  # half -> clear
+        attendance.delete()
+ 
+    return _back_to_month(pk, year, month)
+ 
+ 
+@login_required
+def update_wage(request, pk):
+    """Edit an employee's per-day wage."""
+    if not request.user.is_staff:
+        raise PermissionDenied
+ 
+    employee = get_object_or_404(Employee, pk=pk)
+    year = request.POST.get('year') or timezone.localdate().year
+    month = request.POST.get('month') or timezone.localdate().month
+ 
+    raw_wage = request.POST.get('daily_wage', '').strip()
+ 
+    employee.daily_wage = raw_wage
+    employee.save(update_fields=['daily_wage'])
+    messages.success(request, "Daily wage updated.")
+    return _back_to_month(pk, year, month)
+ 
+ 
+@login_required
+def delete_advance(request, pk, advance_pk):
+    """Remove an advance entry."""
+    if not request.user.is_staff:
+        raise PermissionDenied
+ 
+    advance = get_object_or_404(Advance, pk=advance_pk, employee_id=pk)
+    year, month = advance.date.year, advance.date.month
+    advance.delete()
+    messages.success(request, "Advance removed.")
+    return _back_to_month(pk, year, month)
 
 def backup_media(request):
     import zipfile

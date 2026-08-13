@@ -25,6 +25,12 @@ urlpatterns = [
     path('staff/mark-attendance/', views.mark_attendance, name='mark_attendance'),
     path('staff/add-advance/', views.add_advance, name='add_advance'),
     path('staff/<int:pk>/', views.staff_detail, name='staff_detail'),
+    path('staff/<int:pk>/attendance/<int:year>/<int:month>/<int:day>/toggle/',
+         views.toggle_attendance, name='toggle_attendance'),
+    path('staff/<int:pk>/wage/update/',
+         views.update_wage, name='update_wage'),
+    path('staff/<int:pk>/advances/<int:advance_pk>/delete/',
+         views.delete_advance, name='delete_advance'),
     # path('staff/add/', views.add_staff, name='add_staff'),
     # path('staff/<int:employee_id>/', views.staff_detail, name='staff_detail'),
     
