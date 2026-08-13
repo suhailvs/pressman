@@ -61,6 +61,11 @@ def _date_group_label(d, today):
         return d.strftime("%A")  # e.g. "Sunday"
     return d.strftime("%b %d, %Y")  # e.g. "Jul 28, 2026"
 
+def custom_logout(request):
+    from django.contrib.auth import logout
+    logout(request)
+    return redirect("login")
+
 @login_required
 def change_password(request):
     if request.method == "POST":

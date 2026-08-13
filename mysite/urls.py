@@ -31,5 +31,5 @@ urlpatterns = [
     path("backup/", views.backup_media, name="backup_media"),
     path('change-password/', views.change_password, name='change_password'),
     path("login/", views.LocationsLoginView.as_view(), name="login"),
-    path("logout/", LogoutView.as_view(next_page="login"), name="logout"),
+    path("logout/",views.custom_logout, name="logout"), #LogoutView.as_view(next_page="login"), name="logout"),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
