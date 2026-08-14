@@ -43,8 +43,8 @@
          role="listitem"
          tabindex="0"
          data-search="{{ pickup.location.name }} {{ pickup.picked_up_at|date:'M j, Y' }} {{ pickup.get_status_display }} {{ pickup.note|default:'' }}"
-         onclick="window.location='{% url 'pickup_detail' pickup.pk %}'"
-         onkeydown="if(event.key==='Enter'){window.location='{% url 'pickup_detail' pickup.pk %}'}">
+         onclick="window.location='{% url 'view_pickup' pickup.pk %}'"
+         onkeydown="if(event.key==='Enter'){window.location='{% url 'view_pickup' pickup.pk %}'}">
 
       <div class="chat-row__avatar-wrap">
         {% if pickup.photo %}

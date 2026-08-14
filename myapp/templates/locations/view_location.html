@@ -141,7 +141,7 @@
         <div class="modal-body p-0">
           <div class="list-group list-group-flush">
             {% for pickup in pickups %}
-              <a href="{% url 'pickup_detail' pickup.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+              <a href="{% url 'view_pickup' pickup.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                 <span>{{ pickup.created_at|date:"M j, Y" }}</span>
                 <div class="d-flex align-items-center gap-2">
                   <span class="badge bg-primary">₹{{ pickup.items_total }}</span>

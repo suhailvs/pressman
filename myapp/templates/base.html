@@ -242,16 +242,16 @@
   <!-- Bottom tab bar -->
   <nav class="bottom-nav" aria-label="Primary">
     {% if request.user.is_staff %}
-    <a href="{% url 'location_list' %}"
-       class="bottom-nav__item {% if request.resolver_match.url_name == 'location_list' %}is-active{% endif %}">
+    <a href="{% url 'list_location' %}"
+       class="bottom-nav__item {% if request.resolver_match.url_name == 'list_location' %}is-active{% endif %}">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 9.5 12 3l9 6.5"/>
         <path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/>
       </svg>
       <span class="bottom-nav__label">Locations</span>
     </a>
-    <a href="{% url 'all_pickups' %}"
-       class="bottom-nav__item {% if request.resolver_match.url_name == 'all_pickups' %}is-active{% endif %}">
+    <a href="{% url 'list_pickup' %}"
+       class="bottom-nav__item {% if request.resolver_match.url_name == 'list_pickup' %}is-active{% endif %}">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
         <path d="M3 6h18"/>
@@ -259,8 +259,8 @@
       </svg>
       <span class="bottom-nav__label">Pickups</span>
     </a>
-    <a href="{% url 'staff_list' %}"
-       class="bottom-nav__item {% if request.resolver_match.url_name == 'staff_list' %}is-active{% endif %}">
+    <a href="{% url 'list_staff' %}"
+       class="bottom-nav__item {% if request.resolver_match.url_name == 'list_staff' %}is-active{% endif %}">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M20 21a8 8 0 0 0-16 0"/>
         <circle cx="12" cy="7" r="4"/>

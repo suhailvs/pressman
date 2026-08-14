@@ -69,14 +69,14 @@ def change_password(request):
         request.user.save()
         update_session_auth_hash(request, request.user)  # keeps the user logged in
         messages.success(request, "Password updated.")
-    return redirect('staff_list')
+    return redirect('list_staff')
 
 @login_required
-def home(request):
+def list_location(request):
     if not request.user.is_staff:
-        return redirect('staff_list')
+        return redirect('list_staff')
     locations = Location.objects.filter(is_active=True).order_by("name")
-    return render(request, "locations/location_list.html", {"locations": locations})
+    return render(request, "locations/list_location.html", {"locations": locations})
 
 @staff_required
 def location_create(request):
@@ -85,7 +85,7 @@ def location_create(request):
         if form.is_valid():
             location = form.save()
             messages.success(request, f'"{location.name}" was added.')
-            return redirect("location_list")
+            return redirect("list_location")
     else:
         form = LocationForm()
     return render(request, "locations/add_location.html", {"form": form})
@@ -98,7 +98,7 @@ def location_detail(request, pk):
         location.is_active = False # location.delete()
         location.save()
         messages.success(request, f'"{location.name}" was deactivated.')
-        return redirect("location_list")
+        return redirect("list_location")
     pickups = location.pickups.exclude(status=Pickup.STATUS_CANCELLED).order_by("-created_at")
     return render(request, "locations/view_location.html", {"location": location,"pickups": pickups})
 
@@ -125,7 +125,7 @@ def location_map(request):
     return render(request, "locations/location_map.html", {"locations": locations})
 
 @staff_required
-def all_pickups(request):
+def list_pickup(request):
     show_delivered = request.GET.get("show_delivered") == "1"
     pickups_qs = Pickup.objects.select_related("location").exclude(
         status=Pickup.STATUS_CANCELLED
@@ -153,7 +153,7 @@ def all_pickups(request):
         for d, items in groupby(page_obj.object_list, key=group_date)
     ]
 
-    return render(request, "locations/all_pickups.html", {
+    return render(request, "locations/list_pickup.html", {
         "pickups": page_obj,
         "page_obj": page_obj,
         "show_delivered": show_delivered,
@@ -161,7 +161,7 @@ def all_pickups(request):
     })
     
 @staff_required
-def pickup_detail(request, pk):
+def view_pickup(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
 
     if request.method == "POST":
@@ -170,13 +170,13 @@ def pickup_detail(request, pk):
             pickup.status=Pickup.STATUS_CANCELLED
             pickup.save()
             messages.success(request, "Pickup cancelled.")
-            return redirect("all_pickups")
+            return redirect("list_pickup")
 
         form = PickupForm(request.POST, request.FILES, instance=pickup)
         if form.is_valid():
             form.save()
             messages.success(request, "Pickup updated.")
-            return redirect("pickup_detail", pk=pickup.pk)
+            return redirect("view_pickup", pk=pickup.pk)
         show_edit_modal = True
     else:
         form = PickupForm(instance=pickup)
@@ -184,7 +184,7 @@ def pickup_detail(request, pk):
 
     pickup_items = pickup.items.select_related("item").all()
     total_qty = pickup_items.aggregate(total=Sum("quantity"))["total"] or 0
-    return render(request, "locations/pickup_detail.html", {
+    return render(request, "locations/view_pickup.html", {
         "pickup": pickup,
         "location": pickup.location,
         "form": form,
@@ -235,7 +235,7 @@ def add_pickup_items(request, pk):
     else:
         messages.error(request, "No items were entered.")
 
-    return redirect("pickup_detail", pk=pickup.pk)
+    return redirect("view_pickup", pk=pickup.pk)
  
  
 @staff_required
@@ -244,7 +244,7 @@ def remove_pickup_item(request, pk):
     pickup_pk = pickup_item.pickup.pk
     pickup_item.delete()
     messages.success(request, "Item removed.")
-    return redirect("pickup_detail", pk=pickup_pk)
+    return redirect("view_pickup", pk=pickup_pk)
 
 @staff_required
 def create_item(request):
@@ -253,10 +253,10 @@ def create_item(request):
     category = request.POST["item_category"]
     if Item.objects.filter( name=name, item_category=category).exists():
         messages.error(request, "Item already exists.")
-        return redirect("pickup_detail", pk=pickup_pk)
+        return redirect("view_pickup", pk=pickup_pk)
     Item.objects.create(name=name,item_category=category,price=int(request.POST["price"]))
     messages.success(request, "Item created.")
-    return redirect("pickup_detail", pk=pickup_pk)
+    return redirect("view_pickup", pk=pickup_pk)
 
 @staff_required
 def mark_pickup_paid(request, pk):
@@ -288,7 +288,7 @@ def mark_pickup_paid(request, pk):
                 )
         else:
             messages.error(request, "Select a payment method and enter a valid amount.")
-    return redirect("pickup_detail", pk=pickup.pk)
+    return redirect("view_pickup", pk=pickup.pk)
 
    
 @staff_required
@@ -305,12 +305,12 @@ def quick_add_pickup(request, pk):
         )
         _send_telegram(text)
     messages.success(request, "Pickup created.")
-    return redirect("all_pickups")
+    return redirect("list_pickup")
 
 @staff_required
 def set_pickup_status(request, pk, status):
     if status not in (Pickup.STATUS_PICKED_UP, Pickup.STATUS_DELIVERED):
-        return redirect(request.META.get("HTTP_REFERER", "all_pickups"))
+        return redirect(request.META.get("HTTP_REFERER", "list_pickup"))
  
     pickup = get_object_or_404(Pickup, pk=pk)
     pickup.status = status
@@ -330,10 +330,10 @@ def set_pickup_status(request, pk, status):
             f"🕐 {timezone.localtime(now).strftime('%b %d, %Y · %I:%M %p')}"
         )
     messages.success(request, f"Marked as {pickup.get_status_display()}.")
-    return redirect(request.META.get("HTTP_REFERER", "all_pickups"))
+    return redirect(request.META.get("HTTP_REFERER", "list_pickup"))
  
 @login_required
-def staff_list(request):
+def list_staff(request):
     today = timezone.localdate()
     employees = Employee.objects.filter(is_active=True).order_by('user__first_name')
  
@@ -387,7 +387,7 @@ def staff_list(request):
             'net': earned - advance,
         })
  
-    return render(request, 'locations/staff_list.html', {
+    return render(request, 'locations/list_staff.html', {
         'staff_today': staff_today,
         'staff_month': staff_month,
         'today': today,
@@ -397,7 +397,7 @@ def staff_list(request):
 def mark_attendance(request):
     if not (time(8, 0) <= timezone.localtime().time() <= time(20, 0)):
         messages.error(request, 'You can only mark attendance between 8:00 AM and 8:00 PM.')
-        return redirect('staff_list')
+        return redirect('list_staff')
     employee = request.user.employee
     day_type = request.GET.get('day_type', 'full')
     if day_type not in ('full', 'half'):
@@ -409,10 +409,10 @@ def mark_attendance(request):
     )
     if not created:
         messages.error(request, 'Already marked for today')
-        return redirect('staff_list')
+        return redirect('list_staff')
     label = 'Full day' if day_type == 'full' else 'Half day'
     messages.success(request, f'Marked {employee.user.first_name} as {label}.')
-    return redirect('staff_list')
+    return redirect('list_staff')
 
 @login_required
 def add_advance(request):
@@ -421,13 +421,13 @@ def add_advance(request):
         amount = request.POST.get("amount", "").strip()
         note = request.POST.get("note", "").strip()
         Advance.objects.create(employee=employee, amount=amount, note=note)
-        return redirect('staff_list')
+        return redirect('list_staff')
     return render(request, "locations/add_advance.html")
 
 
 
 @login_required
-def staff_detail(request, pk):
+def view_staff(request, pk):
     employee = get_object_or_404(Employee, pk=pk)
     if not request.user.is_staff and employee.user_id != request.user.id:
         raise PermissionDenied
@@ -499,11 +499,11 @@ def staff_detail(request, pk):
         'next_year': next_year, 'next_month': next_month,
         'is_current_month': is_current_month,
     }
-    return render(request, 'locations/staff_detail.html', context)
+    return render(request, 'locations/view_staff.html', context)
 
 
 def _back_to_month(pk, year, month):
-    return redirect(f"{reverse('staff_detail', args=[pk])}?year={year}&month={month}")
+    return redirect(f"{reverse('view_staff', args=[pk])}?year={year}&month={month}")
  
  
 @login_required

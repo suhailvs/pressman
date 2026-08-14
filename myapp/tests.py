@@ -222,7 +222,7 @@ class LoginRequiredTests(TestCase):
         self.assertIn(reverse("login"), response.url)
 
     def test_home_requires_login(self):
-        self.assertRedirectsToLogin(reverse("location_list"))
+        self.assertRedirectsToLogin(reverse("list_location"))
 
     def test_location_create_requires_login(self):
         self.assertRedirectsToLogin(reverse("location_add"))
@@ -247,8 +247,8 @@ class LoginRequiredTests(TestCase):
     def test_mark_pickup_paid_requires_login(self):
         self.assertRedirectsToLogin(reverse("mark_pickup_paid", args=[self.pickup.pk]))
 
-    def test_all_pickups_requires_login(self):
-        self.assertRedirectsToLogin(reverse("all_pickups"))
+    def test_list_pickup_requires_login(self):
+        self.assertRedirectsToLogin(reverse("list_pickup"))
 
     def test_quick_add_pickup_requires_login(self):
         self.assertRedirectsToLogin(reverse("quick_add_pickup", args=[self.location.pk]))
@@ -258,8 +258,8 @@ class LoginRequiredTests(TestCase):
             reverse("set_pickup_status", args=[self.pickup.pk, Pickup.STATUS_PICKED_UP])
         )
 
-    def test_pickup_detail_is_not_login_gated(self):
-        response = self.client.get(reverse("pickup_detail", args=[self.pickup.pk]))
+    def test_view_pickup_is_not_login_gated(self):
+        response = self.client.get(reverse("view_pickup", args=[self.pickup.pk]))
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse("login"), response.url)
 
@@ -274,7 +274,7 @@ class LocationListViewTests(AuthenticatedViewTestCase):
             name="Inactive Place", latitude=Decimal("1.0"), longitude=Decimal("1.0"),
             is_active=False,
         )
-        response = self.client.get(reverse("location_list"))
+        response = self.client.get(reverse("list_location"))
         self.assertEqual(response.status_code, 200)
         locations = list(response.context["locations"])
         self.assertIn(self.location, locations)
@@ -294,7 +294,7 @@ class LocationCreateViewTests(AuthenticatedViewTestCase):
             "phone": "",
             "maps_url": "https://www.google.com/maps/@2.0,2.0,17z",
         })
-        self.assertRedirects(response, reverse("location_list"))
+        self.assertRedirects(response, reverse("list_location"))
         self.assertTrue(Location.objects.filter(name="New Place").exists())
 
     def test_post_invalid_data_rerenders_with_errors(self):
@@ -315,7 +315,7 @@ class LocationDetailViewTests(AuthenticatedViewTestCase):
             reverse("location_detail", args=[self.location.pk]),
             data={"_method": "delete"},
         )
-        self.assertRedirects(response, reverse("location_list"))
+        self.assertRedirects(response, reverse("list_location"))
         self.location.refresh_from_db()
         self.assertFalse(self.location.is_active)
         # Row still exists — soft delete, not a real delete.
@@ -374,7 +374,7 @@ class PickupDetailViewTests(AuthenticatedViewTestCase):
         self.pickup = Pickup.objects.create(location=self.location)
 
     def test_get_renders_pickup_with_items_context(self):
-        response = self.client.get(reverse("pickup_detail", args=[self.pickup.pk]))
+        response = self.client.get(reverse("view_pickup", args=[self.pickup.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["pickup"], self.pickup)
         self.assertEqual(response.context["location"], self.location)
@@ -384,17 +384,17 @@ class PickupDetailViewTests(AuthenticatedViewTestCase):
 
     def test_post_delete_removes_pickup_and_redirects_to_location(self):
         response = self.client.post(
-            reverse("pickup_detail", args=[self.pickup.pk]),
+            reverse("view_pickup", args=[self.pickup.pk]),
             data={"_method": "delete"},
         )
-        self.assertRedirects(response, reverse("all_pickups"))
+        self.assertRedirects(response, reverse("list_pickup"))
         self.assertTrue(Pickup.objects.filter(pk=self.pickup.pk).exists())
         self.pickup.refresh_from_db()
         self.assertEqual(self.pickup.status, Pickup.STATUS_CANCELLED)
 
     def test_post_edit_updates_pickup(self):
         response = self.client.post(
-            reverse("pickup_detail", args=[self.pickup.pk]),
+            reverse("view_pickup", args=[self.pickup.pk]),
             data={
                 "status": Pickup.STATUS_PICKED_UP,
                 "picked_up_at": "2026-07-11T16:30",
@@ -402,14 +402,14 @@ class PickupDetailViewTests(AuthenticatedViewTestCase):
                 "note": "Updated note",
             },
         )
-        self.assertRedirects(response, reverse("pickup_detail", args=[self.pickup.pk]))
+        self.assertRedirects(response, reverse("view_pickup", args=[self.pickup.pk]))
         self.pickup.refresh_from_db()
         self.assertEqual(self.pickup.status, Pickup.STATUS_PICKED_UP)
         self.assertEqual(self.pickup.note, "Updated note")
 
     def test_post_invalid_edit_reshows_form_with_errors(self):
         response = self.client.post(
-            reverse("pickup_detail", args=[self.pickup.pk]),
+            reverse("view_pickup", args=[self.pickup.pk]),
             data={
                 "status": "not-a-real-status",
                 "picked_up_at": "",
@@ -421,7 +421,7 @@ class PickupDetailViewTests(AuthenticatedViewTestCase):
         self.assertTrue(response.context["show_edit_modal"])
 
     def test_get_404_for_missing_pickup(self):
-        response = self.client.get(reverse("pickup_detail", args=[999999]))
+        response = self.client.get(reverse("view_pickup", args=[999999]))
         self.assertEqual(response.status_code, 404)
 
 
@@ -444,7 +444,7 @@ class AddPickupItemsViewTests(AuthenticatedViewTestCase):
                 "price": ["25"],
             },
         )
-        self.assertRedirects(response, reverse("pickup_detail", args=[self.pickup.pk]))
+        self.assertRedirects(response, reverse("view_pickup", args=[self.pickup.pk]))
 
         item = Item.objects.get(name="shirt", item_category=Item.CATEGORY_IRONING)
         self.assertEqual(item.price, 25)  # new item takes the submitted price
@@ -464,7 +464,7 @@ class AddPickupItemsViewTests(AuthenticatedViewTestCase):
                 "price": [""],  # left blank
             },
         )
-        self.assertRedirects(response, reverse("pickup_detail", args=[self.pickup.pk]))
+        self.assertRedirects(response, reverse("view_pickup", args=[self.pickup.pk]))
         pickup_item = PickupItem.objects.get(pickup=self.pickup, item__name="trousers")
         self.assertEqual(pickup_item.price, 50)
 
@@ -478,7 +478,7 @@ class AddPickupItemsViewTests(AuthenticatedViewTestCase):
                 "price": ["20", "15"],
             },
         )
-        self.assertRedirects(response, reverse("pickup_detail", args=[self.pickup.pk]))
+        self.assertRedirects(response, reverse("view_pickup", args=[self.pickup.pk]))
         self.assertEqual(self.pickup.items.count(), 2)
 
     def test_blank_row_names_are_skipped(self):
@@ -523,7 +523,7 @@ class RemovePickupItemViewTests(AuthenticatedViewTestCase):
         pickup_item = PickupItem.objects.create(pickup=pickup, item=item, quantity=1, price=20)
 
         response = self.client.post(reverse("remove_pickup_item", args=[pickup_item.pk]))
-        self.assertRedirects(response, reverse("pickup_detail", args=[pickup.pk]))
+        self.assertRedirects(response, reverse("view_pickup", args=[pickup.pk]))
         self.assertFalse(PickupItem.objects.filter(pk=pickup_item.pk).exists())
 
     def test_404_for_missing_pickup_item(self):
@@ -545,7 +545,7 @@ class MarkPickupPaidViewTests(AuthenticatedViewTestCase):
             reverse("mark_pickup_paid", args=[self.pickup.pk]),
             data={"payment_method": Pickup.PAYMENT_UPI, "amount": "150"},
         )
-        self.assertRedirects(response, reverse("pickup_detail", args=[self.pickup.pk]))
+        self.assertRedirects(response, reverse("view_pickup", args=[self.pickup.pk]))
         self.pickup.refresh_from_db()
         self.assertTrue(self.pickup.is_paid)
         self.assertEqual(self.pickup.payment_method, Pickup.PAYMENT_UPI)
@@ -599,7 +599,7 @@ class AllPickupsViewTests(AuthenticatedViewTestCase):
         pending = Pickup.objects.create(location=self.location, status=Pickup.STATUS_PENDING)
         delivered = Pickup.objects.create(location=self.location, status=Pickup.STATUS_DELIVERED)
 
-        response = self.client.get(reverse("all_pickups"))
+        response = self.client.get(reverse("list_pickup"))
         pickups = list(response.context["pickups"])
         self.assertIn(pending, pickups)
         self.assertNotIn(delivered, pickups)
@@ -607,7 +607,7 @@ class AllPickupsViewTests(AuthenticatedViewTestCase):
 
     def test_show_delivered_includes_delivered(self):
         delivered = Pickup.objects.create(location=self.location, status=Pickup.STATUS_DELIVERED)
-        response = self.client.get(reverse("all_pickups"), {"show_delivered": "1"})
+        response = self.client.get(reverse("list_pickup"), {"show_delivered": "1"})
         pickups = list(response.context["pickups"])
         self.assertIn(delivered, pickups)
         self.assertTrue(response.context["show_delivered"])
@@ -616,24 +616,24 @@ class AllPickupsViewTests(AuthenticatedViewTestCase):
         for i in range(55):
             Pickup.objects.create(location=self.location, status=Pickup.STATUS_PENDING)
 
-        page1 = self.client.get(reverse("all_pickups"))
+        page1 = self.client.get(reverse("list_pickup"))
         self.assertEqual(len(page1.context["pickups"]), 50)
         self.assertEqual(page1.context["page_obj"].paginator.num_pages, 2)
 
-        page2 = self.client.get(reverse("all_pickups"), {"page": 2})
+        page2 = self.client.get(reverse("list_pickup"), {"page": 2})
         self.assertEqual(len(page2.context["pickups"]), 5)
 
     def test_pending_pickup_shows_only_mark_picked_up_button(self):
         Pickup.objects.create(location=self.location, status=Pickup.STATUS_PENDING)
 
-        response = self.client.get(reverse("all_pickups"))
+        response = self.client.get(reverse("list_pickup"))
         self.assertContains(response, 'aria-label="Mark as picked up"')
         self.assertNotContains(response, 'aria-label="Mark as delivered"')
 
     def test_picked_up_pickup_shows_only_mark_delivered_button(self):
         Pickup.objects.create(location=self.location, status=Pickup.STATUS_PICKED_UP)
 
-        response = self.client.get(reverse("all_pickups"))
+        response = self.client.get(reverse("list_pickup"))
         self.assertContains(response, 'aria-label="Mark as delivered"')
         self.assertNotContains(response, 'aria-label="Mark as picked up"')
 
@@ -648,7 +648,7 @@ class QuickAddPickupViewTests(AuthenticatedViewTestCase):
     def test_creates_blank_pickup_and_redirects(self, mock_post, mock_enabled):
         count_before = Pickup.objects.count()
         response = self.client.post(reverse("quick_add_pickup", args=[self.location.pk]))
-        self.assertRedirects(response, reverse("all_pickups"))
+        self.assertRedirects(response, reverse("list_pickup"))
         self.assertEqual(Pickup.objects.count(), count_before + 1)
 
         pickup = Pickup.objects.latest("created_at")
@@ -661,7 +661,7 @@ class QuickAddPickupViewTests(AuthenticatedViewTestCase):
     @patch("myapp.utils.requests.post")
     def test_skips_telegram_when_disabled(self, mock_post, mock_enabled):
         response = self.client.post(reverse("quick_add_pickup", args=[self.location.pk]))
-        self.assertRedirects(response, reverse("all_pickups"))
+        self.assertRedirects(response, reverse("list_pickup"))
         mock_post.assert_not_called()
 
     @patch("myapp.views._telegram_enabled", return_value=True)
@@ -671,7 +671,7 @@ class QuickAddPickupViewTests(AuthenticatedViewTestCase):
         mock_post.side_effect = requests_module.RequestException("network down")
 
         response = self.client.post(reverse("quick_add_pickup", args=[self.location.pk]))
-        self.assertRedirects(response, reverse("all_pickups"))
+        self.assertRedirects(response, reverse("list_pickup"))
         self.assertTrue(
             Pickup.objects.filter(location=self.location).exists(),
             "Pickup should still be created even if the Telegram call fails.",
@@ -770,7 +770,7 @@ class AuthViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         # Session should be cleared — a subsequent authenticated-only view
         # should now redirect to login.
-        response = self.client.get(reverse("location_list"))
+        response = self.client.get(reverse("list_location"))
         self.assertRedirects(
-            response, f"{reverse('login')}?next={reverse('location_list')}"
+            response, f"{reverse('login')}?next={reverse('list_location')}"
         )

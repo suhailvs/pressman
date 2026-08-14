@@ -159,7 +159,7 @@
 
   <div class="staff-section-label">Today &middot; {{ today|date:"j M" }}</div>
   {% for s in staff_today %}
-    <a href="{% url 'staff_detail' s.id %}" class="staff-row">
+    <a href="{% url 'view_staff' s.id %}" class="staff-row">
       <div class="staff-avatar" style="background: {{ s.color }};">{{ s.name|first|upper }}</div>
       <div class="staff-row__body">
         <p class="staff-row__name">{{ s.name }}</p>
@@ -181,7 +181,7 @@
   {% if request.user.is_staff %}
     <div class="staff-section-label">This month</div>
     {% for s in staff_month %}
-      <a href="{% url 'staff_detail' s.id %}" class="staff-row">
+      <a href="{% url 'view_staff' s.id %}" class="staff-row">
         <div class="staff-avatar" style="background: {{ s.color }};">{{ s.name|first|upper }}</div>
         <div class="staff-row__body">
           <p class="staff-row__name">{{ s.name }}</p>

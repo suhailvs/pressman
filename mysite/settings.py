@@ -57,4 +57,4 @@ DATABASES = {
 }
 AUTH_USER_MODEL = "myapp.User"
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "location_list"
+LOGIN_REDIRECT_URL = "list_location"
