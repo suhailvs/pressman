@@ -630,7 +630,7 @@ class AllPickupsViewTests(AuthenticatedViewTestCase):
 
 class QuickAddPickupViewTests(AuthenticatedViewTestCase):
     @patch("myapp.views._telegram_enabled", return_value=True)
-    @patch("myapp.views.requests.post")
+    @patch("myapp.utils.requests.post")
     def test_creates_blank_pickup_and_redirects(self, mock_post, mock_enabled):
         count_before = Pickup.objects.count()
         response = self.client.post(reverse("quick_add_pickup", args=[self.location.pk]))
@@ -644,14 +644,14 @@ class QuickAddPickupViewTests(AuthenticatedViewTestCase):
         mock_post.assert_called_once()
 
     @patch("myapp.views._telegram_enabled", return_value=False)
-    @patch("myapp.views.requests.post")
+    @patch("myapp.utils.requests.post")
     def test_skips_telegram_when_disabled(self, mock_post, mock_enabled):
         response = self.client.post(reverse("quick_add_pickup", args=[self.location.pk]))
         self.assertRedirects(response, reverse("all_pickups"))
         mock_post.assert_not_called()
 
     @patch("myapp.views._telegram_enabled", return_value=True)
-    @patch("myapp.views.requests.post")
+    @patch("myapp.utils.requests.post")
     def test_telegram_failure_does_not_break_pickup_creation(self, mock_post, mock_enabled):
         import requests as requests_module
         mock_post.side_effect = requests_module.RequestException("network down")
@@ -664,7 +664,7 @@ class QuickAddPickupViewTests(AuthenticatedViewTestCase):
         )
 
     @patch("myapp.views._telegram_enabled", return_value=True)
-    @patch("myapp.views.requests.post")
+    @patch("myapp.utils.requests.post")
     def test_404_for_missing_location(self, mock_post, mock_enabled):
         response = self.client.post(reverse("quick_add_pickup", args=[999999]))
         self.assertEqual(response.status_code, 404)

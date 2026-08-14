@@ -1,8 +1,6 @@
 import re
 import calendar
-import requests
 from itertools import groupby
-from functools import wraps
 
 from datetime import date,time
 from django.contrib.auth import update_session_auth_hash
@@ -13,59 +11,55 @@ from django.contrib.auth.views import LoginView
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.contrib.auth import get_user_model
 from django.db.models import Sum, F
 from django.urls import reverse
 
 from .forms import LocationForm,PickupForm
-from .models import Location, Pickup, PickupItem, Item, Employee, Attendance, Advance, GeneralSettings
+from .models import Location, Pickup, PickupItem, Item, Employee, Attendance, Advance
+from .utils import get_project_activity, TRACKED_MODELS,staff_required, _date_group_label, _send_telegram, _telegram_enabled, _avatar_color
 
-TELEGRAM_BOT_TOKEN = "8574559583:AAG7tRjCSCbW4DkQx3P4a3X44Wp9Ba7RKB4"
-TELEGRAM_CHAT_ID = -5579934168
-# Cycled avatar colors so each employee gets a stable-ish color by id.
-AVATAR_COLORS = ['#128C7E', '#3A7CA5', '#C0533A', '#6B4FA8', '#B8860B', '#4C7A3D']
- 
-def _avatar_color(employee_id):
-    return AVATAR_COLORS[employee_id % len(AVATAR_COLORS)]
-
-def _telegram_enabled(key):
-    return GeneralSettings.objects.filter(key=key, value='t').exists()
-
-def _send_telegram(text):
-    # telegram bot see: https://github.com/suhailvs-archive/stack/blob/main/backend/api/views.py
-    try:
-        requests.post(
-            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
-            data={'chat_id': TELEGRAM_CHAT_ID, "text": text, "parse_mode": "Markdown", "disable_web_page_preview": True},
-            timeout=5,
-        )
-    except requests.RequestException:
-        pass
-
-def staff_required(view_func):
-    """Like @login_required, but also requires request.user.is_staff."""
-    @wraps(view_func)
-    @login_required
-    def wrapper(request, *args, **kwargs):
-        if not request.user.is_staff:
-            raise PermissionDenied
-        return view_func(request, *args, **kwargs)
-    return wrapper
-
-
-def _date_group_label(d, today):
-    delta = (today - d).days
-    if delta == 0:
-        return "Today"
-    if delta == 1:
-        return "Yesterday"
-    if 2 <= delta <= 6:
-        return d.strftime("%A")  # e.g. "Sunday"
-    return d.strftime("%b %d, %Y")  # e.g. "Jul 28, 2026"
+User = get_user_model()
 
 def custom_logout(request):
     from django.contrib.auth import logout
     logout(request)
     return redirect("login")
+
+
+def project_activity_history(request):
+    model_filter = request.GET.get('model') or None
+    user_filter = request.GET.get('user') or None
+    action_filter = request.GET.get('action') or None
+    search = request.GET.get('q') or None
+
+    entries = get_project_activity(
+        model_filter=model_filter,
+        user_filter=user_filter,
+        action_filter=action_filter,
+        search=search,
+    )
+
+    paginator = Paginator(entries, 50)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    context = {
+        'page_obj': page_obj,
+        'model_choices': [m.__name__ for m in TRACKED_MODELS],
+        'user_choices': User.objects.all(),
+        'action_choices': [('+', 'Created'), ('~', 'Updated'), ('-', 'Deleted')],
+        'current_model': model_filter,
+        'current_user': user_filter,
+        'current_action': action_filter,
+        'current_search': search or '',
+    }
+    return render(request, 'locations/project_activity_history.html', context)
+
+
+class LocationsLoginView(LoginView):
+    template_name = "locations/login.html"
+    redirect_authenticated_user = True
+
 
 @login_required
 def change_password(request):
@@ -83,10 +77,6 @@ def home(request):
         return redirect('staff_list')
     locations = Location.objects.filter(is_active=True).order_by("name")
     return render(request, "locations/location_list.html", {"locations": locations})
-
-class LocationsLoginView(LoginView):
-    template_name = "locations/login.html"
-    redirect_authenticated_user = True
 
 @staff_required
 def location_create(request):

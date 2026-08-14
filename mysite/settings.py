@@ -12,6 +12,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "sorl.thumbnail",
+    'simple_history',
     'myapp',
 ]
 MIDDLEWARE = [
@@ -22,6 +23,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 ROOT_URLCONF = 'mysite.urls'
 TEMPLATES = [

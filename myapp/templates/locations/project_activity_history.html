@@ -1,0 +1,143 @@
+<!-- project_activity_history.html -->
+{% extends "base.html" %}
+
+{% block title %}Activity History{% endblock %}
+
+{% block chat_header_title %}Activity History{% endblock %}
+
+{% block chat_header_actions %}
+  <button type="button" class="icon-btn" data-bs-toggle="collapse" data-bs-target="#historyFilters" aria-label="Filter">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+    </svg>
+  </button>
+{% endblock %}
+
+{% block page_content %}
+
+<!-- Filters, collapsed by default -->
+<div class="collapse" id="historyFilters">
+  <form method="get" class="activity-filters">
+    <div class="field-row">
+      <div class="field">
+        <label class="field__label">Model</label>
+        <select name="model" class="field__input">
+          <option value="">All</option>
+          {% for m in model_choices %}
+          <option value="{{ m }}" {% if m == current_model %}selected{% endif %}>{{ m }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field__label">Action</label>
+        <select name="action" class="field__input">
+          <option value="">All</option>
+          {% for code, label in action_choices %}
+          <option value="{{ code }}" {% if code == current_action %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field__label">User</label>
+      <select name="user" class="field__input">
+        <option value="">All</option>
+        {% for u in user_choices %}
+        <option value="{{ u.id }}" {% if u.id|stringformat:"s" == current_user %}selected{% endif %}>{{ u.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label class="field__label">Search</label>
+      <input type="text" name="q" value="{{ current_search }}" placeholder="Search by name…" class="field__input">
+    </div>
+    <button type="submit" class="save-btn">Apply Filters</button>
+  </form>
+</div>
+
+<!-- Activity timeline -->
+<div class="activity-list">
+  {% regroup page_obj by date.date as day_list %}
+  {% for day in day_list %}
+    <div class="activity-daylabel">{{ day.grouper|date:"D, d M Y" }}</div>
+    {% for entry in day.list %}
+    <div class="activity-row activity-row--{{ entry.action_code|cut:'+'|cut:'~'|cut:'-' }}
+                {% if entry.action_code == '+' %}activity-row--create{% endif %}
+                {% if entry.action_code == '~' %}activity-row--update{% endif %}
+                {% if entry.action_code == '-' %}activity-row--delete{% endif %}">
+      <div class="activity-row__dot"></div>
+      <div class="activity-row__body">
+        <div class="activity-row__top">
+          <span class="activity-row__model">{{ entry.model_name }}</span>
+          <span class="activity-row__time">{{ entry.date|date:"H:i" }}</span>
+        </div>
+        <div class="activity-row__label">{{ entry.label }}</div>
+        <div class="activity-row__meta">
+          {{ entry.action }} by {{ entry.user|default:"System" }}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  {% empty %}
+    <p class="text-center text-muted mt-4">No activity found.</p>
+  {% endfor %}
+</div>
+
+<!-- Pagination -->
+<div class="px-3 pb-3">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if current_model %}&model={{ current_model }}{% endif %}{% if current_action %}&action={{ current_action }}{% endif %}{% if current_user %}&user={{ current_user }}{% endif %}{% if current_search %}&q={{ current_search }}{% endif %}"
+       class="save-btn" style="background: var(--wa-text-muted); display:block; text-align:center; text-decoration:none; margin-bottom:8px;">
+      &larr; Newer
+    </a>
+  {% endif %}
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if current_model %}&model={{ current_model }}{% endif %}{% if current_action %}&action={{ current_action }}{% endif %}{% if current_user %}&user={{ current_user }}{% endif %}{% if current_search %}&q={{ current_search }}{% endif %}"
+       class="save-btn" style="display:block; text-align:center; text-decoration:none;">
+      Load Older &rarr;
+    </a>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+.activity-filters{
+  padding: 16px; background: var(--wa-bg); border-bottom: 1px solid var(--wa-border);
+}
+.activity-filters .save-btn{ margin-top: 4px; }
+
+.activity-daylabel{
+  text-align: center; font-size: 0.72rem; font-weight: 600;
+  color: var(--wa-text-muted); text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 14px 0 6px;
+}
+
+.activity-list{ padding-bottom: 8px; }
+.activity-row{
+  display: flex; gap: 12px; padding: 10px 16px;
+  border-bottom: 1px solid var(--wa-border);
+}
+.activity-row__dot{
+  width: 10px; height: 10px; border-radius: 50%;
+  margin-top: 5px; flex-shrink: 0;
+}
+.activity-row--create .activity-row__dot{ background: var(--wa-accent); }
+.activity-row--update .activity-row__dot{ background: #E0A800; }
+.activity-row--delete .activity-row__dot{ background: var(--wa-danger); }
+
+.activity-row__body{ flex: 1; min-width: 0; }
+.activity-row__top{
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+}
+.activity-row__model{
+  font-size: 0.68rem; font-weight: 700; color: var(--wa-green);
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+.activity-row__time{ font-size: 0.72rem; color: var(--wa-text-muted); flex-shrink: 0; }
+.activity-row__label{
+  font-size: 0.92rem; font-weight: 600; color: var(--wa-text); margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.activity-row__meta{ font-size: 0.78rem; color: var(--wa-text-muted); margin-top: 2px; }
+{% endblock %}

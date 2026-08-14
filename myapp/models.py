@@ -1,16 +1,17 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
-
+from simple_history.models import HistoricalRecords
 class GeneralSettings(models.Model):
     key = models.CharField(max_length=50)
     value = models.CharField(max_length=250)
+    history = HistoricalRecords()
     def __str__(self) -> str:
         return f"{self.id}: {self.key}:{self.value}"
     
 class User(AbstractUser):
     phone = models.CharField(max_length=20, blank=True, null=True)
-
+    history = HistoricalRecords()
 class Location(models.Model):
     name = models.CharField(max_length=255)
     latitude = models.DecimalField(max_digits=10, decimal_places=7)
@@ -22,6 +23,7 @@ class Location(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    history = HistoricalRecords()
 
 
 class Pickup(models.Model):
@@ -57,7 +59,7 @@ class Pickup(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
- 
+    history = HistoricalRecords()
     def __str__(self):
         return f"{self.location.name} — {self.get_status_display()}"
 
@@ -81,7 +83,7 @@ class Item(models.Model):
     name = models.CharField(max_length=255)
     item_category = models.CharField(max_length=1, choices=CATEGORY_CHOICES, default=CATEGORY_DRYCLEANING)
     price = models.IntegerField(default=0)
-
+    history = HistoricalRecords()
     class Meta:
         ordering = ["name", "item_category"]
         unique_together = ("name", "item_category")
@@ -96,6 +98,7 @@ class PickupItem(models.Model):
     quantity = models.PositiveIntegerField(default=1)
     price = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+    history = HistoricalRecords()
  
     @property
     def total(self):
@@ -109,8 +112,7 @@ class Employee(models.Model):
     # name = models.CharField(max_length=100)
     daily_wage = models.PositiveIntegerField()
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    history = HistoricalRecords()
     def __str__(self):
         return f"{self.user.get_full_name()} ({self.user.username})"
  
@@ -120,8 +122,7 @@ class Advance(models.Model):
     date = models.DateField(default=timezone.localdate)
     note = models.CharField(max_length=200, blank=True)
     approved = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    history = HistoricalRecords()
     def __str__(self):
         return f"{self.employee.user.get_full_name()} - {self.amount} on {self.date}"
     
@@ -131,8 +132,8 @@ class Attendance(models.Model):
     date = models.DateField(default=timezone.localdate)
     day_type = models.CharField(max_length=4, choices=DAY_TYPE_CHOICES, default='full')
     marked_at = models.DateTimeField(auto_now_add=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    history = HistoricalRecords()
+    
     class Meta:
         unique_together = ('employee', 'date')
     def __str__(self):

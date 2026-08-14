@@ -6,6 +6,7 @@ from django.contrib.auth.views import LogoutView
 from myapp import views
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('activity-history/', views.project_activity_history, name='project_activity_history'),
     path('', views.home, name='location_list'),
     path("locations/add/", views.location_create, name="location_add"),
     path("locations/<int:pk>/", views.location_detail, name="location_detail"),
