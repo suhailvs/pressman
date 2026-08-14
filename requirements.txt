@@ -1,4 +1,5 @@
-Pillow
 django
+django-simple-history
+Pillow
 requests
 sorl-thumbnail
