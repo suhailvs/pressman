@@ -623,6 +623,20 @@ class AllPickupsViewTests(AuthenticatedViewTestCase):
         page2 = self.client.get(reverse("all_pickups"), {"page": 2})
         self.assertEqual(len(page2.context["pickups"]), 5)
 
+    def test_pending_pickup_shows_only_mark_picked_up_button(self):
+        Pickup.objects.create(location=self.location, status=Pickup.STATUS_PENDING)
+
+        response = self.client.get(reverse("all_pickups"))
+        self.assertContains(response, 'aria-label="Mark as picked up"')
+        self.assertNotContains(response, 'aria-label="Mark as delivered"')
+
+    def test_picked_up_pickup_shows_only_mark_delivered_button(self):
+        Pickup.objects.create(location=self.location, status=Pickup.STATUS_PICKED_UP)
+
+        response = self.client.get(reverse("all_pickups"))
+        self.assertContains(response, 'aria-label="Mark as delivered"')
+        self.assertNotContains(response, 'aria-label="Mark as picked up"')
+
 
 # ---------------------------------------------------------------------------
 # Quick add pickup (with Telegram call mocked out — no real network calls)

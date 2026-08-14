@@ -91,7 +91,7 @@
 
       {% if not show_delivered and pickup.status != 'delivered' %}
       <div class="chat-row__quick-actions">
-        {% if pickup.status != 'picked_up' %}
+        {% if pickup.status == 'pending' %}
         <form method="post" action="{% url 'set_pickup_status' pickup.pk 'picked_up' %}" onclick="event.stopPropagation()">
           {% csrf_token %}
           <button type="submit" class="quick-btn quick-btn--picked" aria-label="Mark as picked up" title="Mark as picked up">
@@ -100,7 +100,7 @@
             </svg>
           </button>
         </form>
-        {% endif %}
+        {% elif pickup.status == 'picked_up' %}
         <form method="post" action="{% url 'set_pickup_status' pickup.pk 'delivered' %}" onclick="event.stopPropagation()">
           {% csrf_token %}
           <button type="submit" class="quick-btn quick-btn--delivered" aria-label="Mark as delivered" title="Mark as delivered">
@@ -111,6 +111,7 @@
             </svg>
           </button>
         </form>
+        {% endif %}
       </div>
       {% endif %}
     </div>
