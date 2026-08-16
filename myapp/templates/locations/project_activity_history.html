@@ -61,10 +61,11 @@
   {% for day in day_list %}
     <div class="activity-daylabel">{{ day.grouper|date:"D, d M Y" }}</div>
     {% for entry in day.list %}
-    <div class="activity-row activity-row--{{ entry.action_code|cut:'+'|cut:'~'|cut:'-' }}
-                {% if entry.action_code == '+' %}activity-row--create{% endif %}
-                {% if entry.action_code == '~' %}activity-row--update{% endif %}
-                {% if entry.action_code == '-' %}activity-row--delete{% endif %}">
+    <a href="{% url 'activity_entry_detail' entry.model_name entry.record.pk %}"
+      class="activity-row
+              {% if entry.action_code == '+' %}activity-row--create{% endif %}
+              {% if entry.action_code == '~' %}activity-row--update{% endif %}
+              {% if entry.action_code == '-' %}activity-row--delete{% endif %}">
       <div class="activity-row__dot"></div>
       <div class="activity-row__body">
         <div class="activity-row__top">
@@ -72,11 +73,12 @@
           <span class="activity-row__time">{{ entry.date|date:"H:i" }}</span>
         </div>
         <div class="activity-row__label">{{ entry.label }}</div>
-        <div class="activity-row__meta">
-          {{ entry.action }} by {{ entry.user|default:"System" }}
-        </div>
+        <div class="activity-row__meta">{{ entry.action }} by {{ entry.user|default:"System" }}</div>
       </div>
-    </div>
+      <svg class="activity-row__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </a>
     {% endfor %}
   {% empty %}
     <p class="text-center text-muted mt-4">No activity found.</p>
@@ -140,4 +142,6 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .activity-row__meta{ font-size: 0.78rem; color: var(--wa-text-muted); margin-top: 2px; }
+.activity-row{ text-decoration: none; color: inherit; align-items: flex-start; }
+.activity-row__chevron{ align-self: center; color: var(--wa-text-muted); flex-shrink: 0; }
 {% endblock %}

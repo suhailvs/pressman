@@ -1,7 +1,7 @@
 import re
 import calendar
 from itertools import groupby
-
+from simple_history.utils import get_history_model_for_model
 from datetime import date,time
 from django.contrib.auth import update_session_auth_hash
 from django.core.exceptions import PermissionDenied
@@ -18,7 +18,7 @@ from django.urls import reverse
 from .forms import LocationForm,PickupForm
 from .models import Location, Pickup, PickupItem, Item, Employee, Attendance, Advance
 from .utils import get_project_activity, TRACKED_MODELS,staff_required, _date_group_label, _send_telegram, _telegram_enabled, _avatar_color
-
+from .utils import get_tracked_model_by_name, get_display_label
 User = get_user_model()
 
 def custom_logout(request):
@@ -26,6 +26,9 @@ def custom_logout(request):
     logout(request)
     return redirect("login")
 
+class LocationsLoginView(LoginView):
+    template_name = "locations/login.html"
+    redirect_authenticated_user = True
 
 def project_activity_history(request):
     model_filter = request.GET.get('model') or None
@@ -55,10 +58,55 @@ def project_activity_history(request):
     }
     return render(request, 'locations/project_activity_history.html', context)
 
+def activity_entry_detail(request, model_name, history_id):
+    model = get_tracked_model_by_name(model_name)
+    if model is None:
+        raise Http404("Unknown model")
 
-class LocationsLoginView(LoginView):
-    template_name = "locations/login.html"
-    redirect_authenticated_user = True
+    history_model = get_history_model_for_model(model)
+    record = get_object_or_404(history_model, pk=history_id)
+
+    # Find the previous historical record for the same object to build a diff
+    previous_record = (
+        history_model.objects
+        .filter(id=record.id, history_date__lt=record.history_date)
+        .order_by('-history_date')
+        .first()
+    )
+
+    changes = []
+    if previous_record:
+        delta = record.diff_against(previous_record)
+        for change in delta.changes:
+            changes.append({
+                'field': change.field,
+                'old': change.old,
+                'new': change.new,
+            })
+    elif record.history_type == '+':
+        # Creation record — show initial field values instead of a diff
+        for field in model._meta.fields:
+            if field.name in ('id',):
+                continue
+            changes.append({
+                'field': field.name,
+                'old': None,
+                'new': getattr(record, field.name, None),
+            })
+
+    # Full timeline for this specific object (all versions), most recent first
+    object_history = history_model.objects.filter(id=record.id).order_by('-history_date')
+
+    context = {
+        'model_name': model_name,
+        'record': record,
+        'label': get_display_label(record, model),
+        'changes': changes,
+        'object_history': object_history,
+        'action_label': {'+': 'Created', '~': 'Updated', '-': 'Deleted'}.get(record.history_type),
+    }
+    return render(request, 'locations/activity_entry_detail.html', context)
+
 
 
 @login_required

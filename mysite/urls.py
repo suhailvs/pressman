@@ -7,6 +7,7 @@ from myapp import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('activity-history/', views.project_activity_history, name='project_activity_history'),
+    path('activity-history/<str:model_name>/<int:history_id>/', views.activity_entry_detail, name='activity_entry_detail'),
     path('', views.list_location, name='list_location'),
     path("locations/add/", views.location_create, name="location_add"),
     path("locations/<int:pk>/", views.location_detail, name="location_detail"),

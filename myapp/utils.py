@@ -21,7 +21,14 @@ TELEGRAM_BOT_TOKEN = "8574559583:AAG7tRjCSCbW4DkQx3P4a3X44Wp9Ba7RKB4"
 TELEGRAM_CHAT_ID = -5579934168
 # Cycled avatar colors so each employee gets a stable-ish color by id.
 AVATAR_COLORS = ['#128C7E', '#3A7CA5', '#C0533A', '#6B4FA8', '#B8860B', '#4C7A3D']
- 
+
+
+def get_tracked_model_by_name(name):
+    for model in TRACKED_MODELS:
+        if model.__name__ == name:
+            return model
+    return None
+
 def _avatar_color(employee_id):
     return AVATAR_COLORS[employee_id % len(AVATAR_COLORS)]
 

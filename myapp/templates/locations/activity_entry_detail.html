@@ -1,0 +1,107 @@
+<!-- activity_entry_detail.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ model_name }} History{% endblock %}
+{% block chat_header_title %}{{ label }}{% endblock %}
+
+{% block chat_header_actions %}
+  <a href="{% url 'project_activity_history' %}" class="icon-btn" aria-label="Back">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+  </a>
+{% endblock %}
+
+{% block page_content %}
+
+<div class="entry-summary">
+  <span class="entry-summary__badge entry-summary__badge--{{ record.history_type|cut:'+'|cut:'~'|cut:'-' }}">
+    {{ action_label }}
+  </span>
+  <div class="entry-summary__model">{{ model_name }}</div>
+  <div class="entry-summary__meta">
+    {{ record.history_date|date:"D, d M Y — H:i:s" }} · by {{ record.history_user|default:"System" }}
+  </div>
+</div>
+
+{% if changes %}
+<div class="entry-changes">
+  <div class="entry-changes__title">
+    {% if record.history_type == '+' %}Initial Values{% else %}What Changed{% endif %}
+  </div>
+  {% for change in changes %}
+  <div class="change-row">
+    <div class="change-row__field">{{ change.field }}</div>
+    <div class="change-row__values">
+      {% if change.old is not None %}
+        <span class="change-row__old">{{ change.old }}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      {% endif %}
+      <span class="change-row__new">{{ change.new|default:"—" }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-center text-muted mt-3">No field-level changes recorded.</p>
+{% endif %}
+
+<div class="entry-versions">
+  <div class="entry-changes__title">Full Version History</div>
+  {% for v in object_history %}
+  <a href="{% url 'activity_entry_detail' model_name v.pk %}"
+     class="version-row {% if v.pk == record.pk %}version-row--active{% endif %}">
+    <span class="version-row__type version-row__type--{{ v.history_type|cut:'+'|cut:'~'|cut:'-' }}">
+      {% if v.history_type == '+' %}C{% elif v.history_type == '~' %}U{% else %}D{% endif %}
+    </span>
+    <span class="version-row__date">{{ v.history_date|date:"d M Y, H:i" }}</span>
+    <span class="version-row__user">{{ v.history_user|default:"System" }}</span>
+  </a>
+  {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+.entry-summary{ padding: 20px 16px 16px; border-bottom: 1px solid var(--wa-border); }
+.entry-summary__badge{
+  display: inline-block; font-size: 0.7rem; font-weight: 700;
+  padding: 3px 10px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.03em;
+  margin-bottom: 8px;
+}
+.entry-summary__badge--create{ background: #E6F8ED; color: #1a7d3e; }
+.entry-summary__badge--update{ background: #FFF6E0; color: #a86b00; }
+.entry-summary__badge--delete{ background: #FDEAEA; color: var(--wa-danger); }
+.entry-summary__model{ font-size: 1.1rem; font-weight: 700; color: var(--wa-text); }
+.entry-summary__meta{ font-size: 0.82rem; color: var(--wa-text-muted); margin-top: 4px; }
+
+.entry-changes{ padding: 16px; }
+.entry-changes__title{
+  font-size: 0.72rem; font-weight: 700; color: var(--wa-green);
+  text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px;
+}
+.change-row{ padding: 10px 0; border-bottom: 1px solid var(--wa-border); }
+.change-row__field{ font-size: 0.8rem; font-weight: 600; color: var(--wa-text-muted); margin-bottom: 4px; text-transform: capitalize; }
+.change-row__values{ display: flex; align-items: center; gap: 8px; font-size: 0.92rem; flex-wrap: wrap; }
+.change-row__old{ color: var(--wa-danger); text-decoration: line-through; opacity: 0.8; }
+.change-row__new{ color: var(--wa-text); font-weight: 600; }
+
+.entry-versions{ padding: 4px 16px 24px; }
+.version-row{
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; text-decoration: none; color: inherit;
+  border-bottom: 1px solid var(--wa-border);
+}
+.version-row--active{ background: var(--wa-bg); margin: 0 -16px; padding: 10px 16px; }
+.version-row__type{
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.68rem; font-weight: 700; color: #fff;
+}
+.version-row__type--create{ background: var(--wa-accent); }
+.version-row__type--update{ background: #E0A800; }
+.version-row__type--delete{ background: var(--wa-danger); }
+.version-row__date{ font-size: 0.85rem; font-weight: 500; }
+.version-row__user{ font-size: 0.8rem; color: var(--wa-text-muted); margin-left: auto; }
+{% endblock %}
