@@ -242,7 +242,22 @@ def view_pickup(request, pk):
         "pickup_items": pickup_items,
         "total_qty": total_qty,
     })
- 
+
+@staff_required
+def add_pickup_items_page(request, pk):
+    pickup = get_object_or_404(Pickup, pk=pk)
+    category = request.GET.get("category", "d")
+    if category not in ("d", "i"):
+        category = "d"
+    context = {
+        "pickup": pickup,
+        "category": category,
+        "dry_items": Item.objects.filter(item_category="d"),
+        "iron_items": Item.objects.filter(item_category="i"),
+    }
+    return render(request, "locations/add_pickup_items.html", context)
+
+
 @staff_required
 def add_pickup_items(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
@@ -254,6 +269,7 @@ def add_pickup_items(request, pk):
         category = Item.CATEGORY_DRYCLEANING
 
     created = 0
+    updated = 0
     for raw_name, raw_qty, raw_price in zip(item_names, quantities, prices):
         name = raw_name.strip().lower()
         if not name:
@@ -275,13 +291,31 @@ def add_pickup_items(request, pk):
         item, _ = Item.objects.get_or_create(name=name, item_category=category, defaults={"price": price})
         if not raw_price:
             price = item.price
-        PickupItem.objects.create(pickup=pickup, item=item, quantity=quantity, price=price)
-        created += 1
 
-    if created:
-        messages.success(request, f"Added {created} item{'s' if created != 1 else ''}.")
+        pickup_item, was_created = PickupItem.objects.get_or_create(
+            pickup=pickup, item=item,
+            defaults={"quantity": quantity, "price": price},
+        )
+        if was_created:
+            created += 1
+        else:
+            # Item's already on this pickup — merge quantities instead of
+            # erroring, and refresh the price to whatever was entered/looked up.
+            pickup_item.quantity = F("quantity") + quantity
+            pickup_item.price = price
+            pickup_item.save(update_fields=["quantity", "price"])
+            updated += 1
+
+    if created or updated:
+        parts = []
+        if created:
+            parts.append(f"added {created} item{'s' if created != 1 else ''}")
+        if updated:
+            parts.append(f"updated {updated} existing item{'s' if updated != 1 else ''}")
+        messages.success(request, " and ".join(parts).capitalize() + ".")
     else:
         messages.error(request, "No items were entered.")
+        return redirect(f"{reverse('add_pickup_items_page', args=[pickup.pk])}?category={category}")
 
     return redirect("view_pickup", pk=pickup.pk)
  

@@ -106,6 +106,11 @@ class PickupItem(models.Model):
  
     def __str__(self):
         return f"{self.quantity} x {self.item.name}"
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["pickup", "item"], name="unique_pickup_item")
+        ]
 
 class Employee(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
