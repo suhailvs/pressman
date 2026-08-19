@@ -12,6 +12,9 @@ class GeneralSettings(models.Model):
 class User(AbstractUser):
     phone = models.CharField(max_length=20, blank=True, null=True)
     history = HistoricalRecords()
+    def __str__(self):
+        return self.first_name
+    
 class Location(models.Model):
     name = models.CharField(max_length=255)
     latitude = models.DecimalField(max_digits=10, decimal_places=7)
@@ -24,7 +27,8 @@ class Location(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     history = HistoricalRecords()
-
+    def __str__(self):
+        return self.name
 
 class Pickup(models.Model):
     STATUS_PENDING = "pending"

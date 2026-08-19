@@ -34,6 +34,7 @@ urlpatterns = [
          views.update_wage, name='update_wage'),
     path('staff/<int:pk>/advances/<int:advance_pk>/delete/',
          views.delete_advance, name='delete_advance'),
+    path('dashboard/', views.dashboard, name='dashboard'),
     # path('staff/add/', views.add_staff, name='add_staff'),
     # path('staff/<int:employee_id>/', views.view_staff, name='view_staff'),
     

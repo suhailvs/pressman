@@ -12,9 +12,9 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.contrib.auth import get_user_model
-from django.db.models import Sum, F
+from django.db.models import Sum, F, Count
 from django.urls import reverse
-
+from django.http import Http404
 from .forms import LocationForm,PickupForm
 from .models import Location, Pickup, PickupItem, Item, Employee, Attendance, Advance
 from .utils import get_project_activity, TRACKED_MODELS,staff_required, _date_group_label, _send_telegram, _telegram_enabled, _avatar_color
@@ -29,7 +29,8 @@ def custom_logout(request):
 class LocationsLoginView(LoginView):
     template_name = "locations/login.html"
     redirect_authenticated_user = True
-
+    
+@login_required
 def project_activity_history(request):
     model_filter = request.GET.get('model') or None
     user_filter = request.GET.get('user') or None
@@ -58,6 +59,7 @@ def project_activity_history(request):
     }
     return render(request, 'locations/project_activity_history.html', context)
 
+@login_required
 def activity_entry_detail(request, model_name, history_id):
     model = get_tracked_model_by_name(model_name)
     if model is None:
@@ -177,7 +179,7 @@ def list_pickup(request):
     show_delivered = request.GET.get("show_delivered") == "1"
     pickups_qs = Pickup.objects.select_related("location").exclude(
         status=Pickup.STATUS_CANCELLED
-    )
+    ).annotate(total_items=Sum("items__quantity"))
     if show_delivered:
         pickups_qs = pickups_qs.filter(status=Pickup.STATUS_DELIVERED).order_by(
             F("delivered_at").desc(nulls_last=True)
@@ -647,6 +649,106 @@ def delete_advance(request, pk, advance_pk):
     advance.delete()
     messages.success(request, "Advance removed.")
     return _back_to_month(pk, year, month)
+
+
+@staff_required
+def dashboard(request):
+    today = timezone.localdate()
+    try:
+        year = int(request.GET.get('year', today.year))
+        month = int(request.GET.get('month', today.month))
+    except ValueError:
+        year, month = today.year, today.month
+
+    first_day = date(year, month, 1)
+    last_day = date(year, month, calendar.monthrange(year, month)[1])
+
+    # --- Pickups ---
+    pickups_qs = Pickup.objects.filter(
+        created_at__date__range=(first_day, last_day)
+    ).exclude(status=Pickup.STATUS_CANCELLED)
+    total_pickups = pickups_qs.count()
+    status_counts = {
+        row['status']: row['count']
+        for row in pickups_qs.values('status').annotate(count=Count('id'))
+    }
+
+    pickups_by_location = list(
+        pickups_qs.values('location__name')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:10]
+    )
+
+    # --- Sales ---
+    paid_pickups = Pickup.objects.filter(paid_at__date__range=(first_day, last_day))
+    total_sales = paid_pickups.aggregate(t=Sum('amount_paid'))['t'] or 0
+    sales_by_method = {
+        row['payment_method']: row['t']
+        for row in paid_pickups.values('payment_method').annotate(t=Sum('amount_paid'))
+    }
+    sales_by_location = list(
+        paid_pickups.values('location__name')
+        .annotate(total=Sum('amount_paid'))
+        .order_by('-total')[:10]
+    )
+
+    # --- Attendance / wage cost ---
+    employees = Employee.objects.filter(is_active=True)
+    attendance_qs = Attendance.objects.filter(date__range=(first_day, last_day))
+
+    attendance_by_employee = []
+    total_expense = 0
+    for emp in employees:
+        full = attendance_qs.filter(employee=emp, day_type='full').count()
+        half = attendance_qs.filter(employee=emp, day_type='half').count()
+        cost = round(emp.daily_wage * (full + 0.5 * half))
+        total_expense += cost
+        if full or half:
+            attendance_by_employee.append({
+                'name': emp.user.get_full_name() or emp.user.username,
+                'full': full, 'half': half, 'cost': cost,
+            })
+
+    total_advances = Advance.objects.filter(
+        date__range=(first_day, last_day)
+    ).aggregate(t=Sum('amount'))['t'] or 0
+
+    profit = total_sales - total_expense
+
+    # --- New locations ---
+    new_locations = Location.objects.filter(
+        created_at__date__range=(first_day, last_day)
+    ).count()
+
+    # prev/next month nav
+    prev_month = month - 1 or 12
+    prev_year = year - 1 if month == 1 else year
+    next_month = month + 1 if month < 12 else 1
+    next_year = year + 1 if month == 12 else year
+    is_current_month = (year == today.year and month == today.month)
+
+    context = {
+        'month_label': first_day.strftime('%B %Y'),
+        'year': year, 'month': month,
+        'prev_year': prev_year, 'prev_month': prev_month,
+        'next_year': next_year, 'next_month': next_month,
+        'is_current_month': is_current_month,
+
+        'total_pickups': total_pickups,
+        'status_counts': status_counts,
+        'pickups_by_location': pickups_by_location,
+
+        'total_sales': total_sales,
+        'sales_by_method': sales_by_method,
+        'sales_by_location': sales_by_location,
+        'total_expense': total_expense,
+        'total_advances': total_advances,
+        'profit': profit,
+
+        'attendance_by_employee': attendance_by_employee,
+        'new_locations': new_locations,
+    }
+    return render(request, 'locations/dashboard.html', context)
 
 def backup_media(request):
     import zipfile

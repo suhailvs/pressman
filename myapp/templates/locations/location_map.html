@@ -3,7 +3,7 @@
 
 {% block title %}All Locations{% endblock %}
 
-{% block chat_header_title %}All Locations <span class="map-count-badge">{{ locations.count }}</span>{% endblock %}
+{% block chat_header_title %}All Locations <span class="count-badge">{{ locations.count }}</span>{% endblock %}
 
 {% block page_content %}
   <!-- Map -->
@@ -12,21 +12,7 @@
   </div>
 {% endblock %}
 
-{% block extra_css %}
-  .map-count-badge{
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 24px;
-    height: 24px;
-    padding: 0 8px;
-    border-radius: 999px;
-    background: var(--accent, #2563eb);
-    color: #fff;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-
+{% block extra_css %}  
   .map-wrap{
     position: absolute;
     top: var(--header-height, 50px);

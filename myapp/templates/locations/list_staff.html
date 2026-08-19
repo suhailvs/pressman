@@ -98,6 +98,16 @@
 
 {% block chat_header_title %}Staff:{{ request.user.first_name }}{% endblock %}
 {% block chat_header_actions %}
+  {% if request.user.is_staff %}
+  <a href="{% url 'dashboard' %}" class="icon-btn" aria-label="Dashboard">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="9" rx="1"/>
+      <rect x="14" y="3" width="7" height="5" rx="1"/>
+      <rect x="14" y="12" width="7" height="9" rx="1"/>
+      <rect x="3" y="16" width="7" height="5" rx="1"/>
+    </svg>
+  </a>
+  {% endif %}
   <button class="icon-btn" type="button" data-bs-toggle="modal" data-bs-target="#changePasswordModal" aria-label="Change password">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>

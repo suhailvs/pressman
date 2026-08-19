@@ -5,7 +5,7 @@
 {% block title %}All Pickups{% endblock %}
 
 
-{% block chat_header_title %}All Pickups{% endblock %}
+{% block chat_header_title %}All Pickups <span class="count-badge">{{ page_obj.paginator.count }}</span>{% endblock %}
 
 {% block page_content %}
   <!-- Search (client-side, filters the list below) -->
@@ -85,7 +85,12 @@
           <span class="chat-row__preview">
             {{ pickup.note|default:"No notes added"|truncatechars:34 }}
           </span>
-          <span class="status-badge status-badge--{{ pickup.status }}">{{ pickup.get_status_display }}</span>
+          <div class="chat-row__bottom-right">
+            {% if pickup.total_items %}
+              <span class="chat-row__item-count">{{ pickup.total_items }} pcs</span>
+            {% endif %}
+            <span class="status-badge status-badge--{{ pickup.status }}">{{ pickup.get_status_display }}</span>
+          </div>
         </div>
       </div>
 
@@ -262,6 +267,13 @@
     display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; margin-left: 6px;
   }
   .chat-row__quick-actions form{ margin: 0; }
+  .chat-row__bottom-right{
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: 8px;
+  }
+  .chat-row__item-count{
+    font-size: 0.72rem; font-weight: 600; color: var(--wa-text-muted);
+    white-space: nowrap;
+  }
   .quick-btn{
     width: 28px; height: 28px; border-radius: 50%;
     border: none; display: flex; align-items: center; justify-content: center;
