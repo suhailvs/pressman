@@ -60,6 +60,13 @@
         </svg>
         New Item
       </button>
+      <button type="button" class="locate-btn" data-bs-toggle="modal" data-bs-target="#item-prices-modal">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"/>
+          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>
+        </svg>
+        Item Prices
+      </button>
     </div>
 
     <button type="submit" class="save-btn">Save items</button>
@@ -96,20 +103,76 @@
     </div>
   </div>
 </div>
+
+<!-- Item Prices modal — edit any catalog item's price inline, saved via AJAX -->
+<div class="modal fade" id="item-prices-modal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content wa-modal">
+      <div class="modal-header wa-modal__header">
+        <h5 class="modal-title wa-modal__title">Item Prices</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body wa-modal__body price-modal__body">
+
+        <div class="price-modal__group">
+          <div class="price-modal__group-label">Dry Cleaning</div>
+          {% for catalog_item in dry_items %}
+          <div class="price-row" data-item-id="{{ catalog_item.pk }}" data-category="d" data-name="{{ catalog_item.name|escapejs }}">
+            <span class="price-row__name">{{ catalog_item.name }}</span>
+            <span class="price-row__currency">₹</span>
+            <input type="number" min="0" step="1" class="price-row__input" value="{{ catalog_item.price }}" inputmode="numeric">
+            <button type="button" class="price-row__save" aria-label="Save price for {{ catalog_item.name }}">
+              <svg class="price-row__save-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <span class="price-row__spinner" aria-hidden="true"></span>
+            </button>
+          </div>
+          {% empty %}
+          <p class="price-modal__empty">No dry cleaning items yet.</p>
+          {% endfor %}
+        </div>
+
+        <div class="price-modal__group">
+          <div class="price-modal__group-label">Ironing</div>
+          {% for catalog_item in iron_items %}
+          <div class="price-row" data-item-id="{{ catalog_item.pk }}" data-category="i" data-name="{{ catalog_item.name|escapejs }}">
+            <span class="price-row__name">{{ catalog_item.name }}</span>
+            <span class="price-row__currency">₹</span>
+            <input type="number" min="0" step="1" class="price-row__input" value="{{ catalog_item.price }}" inputmode="numeric">
+            <button type="button" class="price-row__save" aria-label="Save price for {{ catalog_item.name }}">
+              <svg class="price-row__save-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <span class="price-row__spinner" aria-hidden="true"></span>
+            </button>
+          </div>
+          {% empty %}
+          <p class="price-modal__empty">No ironing items yet.</p>
+          {% endfor %}
+        </div>
+
+      </div>
+      <div class="modal-footer wa-modal__footer">
+        <button type="button" class="wa-btn wa-btn--secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_css %}
   .add-items-page{ padding: 20px; }
 
-  .category-toggle{ display: flex; gap: 10px; margin-bottom: 22px; }
+  .category-toggle{ display: flex; gap: 6px; margin-bottom: 16px; }
   .category-toggle__opt{
-    flex: 1; padding: 11px; border: 1.5px solid var(--wa-border); border-radius: 10px;
-    background: #fff; font-size: 0.9rem; font-weight: 600; color: var(--wa-text-muted);
+    flex: 1; padding: 7px; border: 1.5px solid var(--wa-border); border-radius: 8px;
+    background: #fff; font-size: 0.8rem; font-weight: 600; color: var(--wa-text-muted);
   }
   .category-toggle__opt.is-active{ border-color: var(--wa-green); color: var(--wa-green); background: #E3F6EC; }
   .category-toggle__opt:active{ opacity: 0.8; }
 
-  #item-rows{ display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+  #item-rows{ display: flex; flex-direction: column; gap: 0px; margin-bottom: 14px; }
   .item-input-row{ display: flex; align-items: center; gap: 8px; }
   .item-input-row .field__input{ margin: 0; }
   .item-input-row__qty{ width: 56px; flex-shrink: 0; text-align: center; }
@@ -145,6 +208,51 @@
   .wa-btn--primary:active{ background: var(--wa-green-dark); }
   .wa-btn--secondary{ background: var(--wa-bg); color: var(--wa-text-muted); }
   .wa-btn--secondary:active{ background: var(--wa-border); }
+
+  /* Item Prices modal */
+  .price-modal__body{ padding-top: 8px; }
+  .price-modal__group{ margin-bottom: 18px; }
+  .price-modal__group:last-child{ margin-bottom: 0; }
+  .price-modal__group-label{
+    font-size: 0.72rem; font-weight: 700; color: var(--wa-green);
+    text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;
+  }
+  .price-modal__empty{ font-size: 0.85rem; color: var(--wa-text-muted); margin: 0; }
+
+  .price-row{
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0; border-bottom: 1px solid var(--wa-border);
+  }
+  .price-row:last-child{ border-bottom: none; }
+  .price-row__name{
+    flex: 1; min-width: 0; font-size: 0.92rem; color: var(--wa-text);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .price-row__currency{ font-size: 0.85rem; color: var(--wa-text-muted); flex-shrink: 0; }
+  .price-row__input{
+    width: 72px; flex-shrink: 0; text-align: center;
+    border: 1.5px solid var(--wa-border); border-radius: 8px;
+    padding: 6px 4px; font-size: 0.9rem; color: var(--wa-text);
+  }
+  .price-row__input:focus{ outline: none; border-color: var(--wa-green); }
+  .price-row__input.is-dirty{ border-color: #E0A800; }
+
+  .price-row__save{
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; border: none;
+    background: var(--wa-bg); color: var(--wa-text-muted);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .price-row__save:active{ background: var(--wa-border); }
+  .price-row__save.is-saved{ background: #E3F6EC; color: var(--wa-green-dark); }
+  .price-row__save.is-error{ background: #FDEAEA; color: var(--wa-danger); }
+  .price-row__save.is-loading .price-row__save-icon{ display: none; }
+  .price-row__save-icon{ display: block; }
+  .price-row__spinner{
+    display: none; width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid currentColor; border-right-color: transparent;
+    animation: btn-spin 0.6s linear infinite;
+  }
+  .price-row__save.is-loading .price-row__spinner{ display: inline-block; }
 {% endblock %}
 
 {% block extra_js %}
@@ -159,6 +267,9 @@
     const newItemCategoryInput = document.getElementById("new-item-category");
     const pageTitle = document.getElementById("add-items-title");
     const toggleBtns = document.querySelectorAll(".category-toggle__opt");
+    const csrfToken = document.querySelector('#add-items-form [name=csrfmiddlewaretoken]').value;
+    // "0" is swapped out for the real item id at request time.
+    const updateItemPriceUrlTemplate = "{% url 'update_item_price' 0 %}";
 
     const itemPricesByCategory = {
       d: {
@@ -273,11 +384,21 @@
     $(rowsContainer).on("change", ".item-name-select", function () {
       const row = this.closest(".item-input-row");
       const priceInput = row.querySelector('input[name="price"]');
+      const qtyInput = row.querySelector('input[name="quantity"]');
       const selectedOption = this.options[this.selectedIndex];
       const price = selectedOption ? selectedOption.getAttribute("data-price") : undefined;
       priceInput.value = (price !== undefined && price !== "") ? price : "";
 
       refreshSelectOptions();
+
+      // Move focus to quantity once an item is picked, so the user can
+      // immediately type the count without reaching for the qty field.
+      if (this.value && qtyInput) {
+        setTimeout(function () {
+          qtyInput.focus();
+          qtyInput.select();
+        }, 0);
+      }
     });
 
     // Category toggle — swaps every row's options instead of reopening a modal
@@ -300,6 +421,85 @@
         rowsContainer.querySelectorAll('input[name="price"]').forEach(i => i.value = "");
       });
     });
+
+    // --- Item Prices modal: inline AJAX price editing ---
+    const pricesModal = document.getElementById("item-prices-modal");
+
+    function markInputDirty(input) { input.classList.add("is-dirty"); }
+    function markInputClean(input) { input.classList.remove("is-dirty"); }
+
+    function setSaveState(btn, state) {
+      btn.classList.remove("is-saved", "is-error", "is-loading");
+      if (state) btn.classList.add(state);
+    }
+
+    async function savePrice(row) {
+      const itemId = row.dataset.itemId;
+      const category = row.dataset.category;
+      const name = row.dataset.name;
+      const input = row.querySelector(".price-row__input");
+      const saveBtn = row.querySelector(".price-row__save");
+      const price = parseInt(input.value, 10);
+
+      if (isNaN(price) || price < 0) {
+        setSaveState(saveBtn, "is-error");
+        return;
+      }
+
+      setSaveState(saveBtn, "is-loading");
+      saveBtn.disabled = true;
+
+      try {
+        const url = updateItemPriceUrlTemplate.replace("/0/update-price/", "/" + itemId + "/update-price/");
+        const res = await fetch(url, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": csrfToken,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: "price=" + encodeURIComponent(price),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.ok) {
+          itemPricesByCategory[category][name] = data.price;
+          markInputClean(input);
+          setSaveState(saveBtn, "is-saved");
+          setTimeout(() => setSaveState(saveBtn, null), 1200);
+        } else {
+          setSaveState(saveBtn, "is-error");
+        }
+      } catch (err) {
+        setSaveState(saveBtn, "is-error");
+      } finally {
+        saveBtn.disabled = false;
+      }
+    }
+
+    if (pricesModal) {
+      pricesModal.addEventListener("hidden.bs.modal", function () {
+        window.location.reload();
+      });
+      pricesModal.addEventListener("input", function (e) {
+        if (e.target.classList.contains("price-row__input")) {
+          markInputDirty(e.target);
+          setSaveState(e.target.closest(".price-row").querySelector(".price-row__save"), null);
+        }
+      });
+
+      pricesModal.addEventListener("click", function (e) {
+        const saveBtn = e.target.closest(".price-row__save");
+        if (!saveBtn) return;
+        savePrice(saveBtn.closest(".price-row"));
+      });
+
+      pricesModal.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && e.target.classList.contains("price-row__input")) {
+          e.preventDefault();
+          savePrice(e.target.closest(".price-row"));
+        }
+      });
+    }
   });
 </script>
 {% endblock %}

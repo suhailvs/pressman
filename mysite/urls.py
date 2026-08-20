@@ -23,7 +23,7 @@ urlpatterns = [
     path("pickups/<int:pk>/items/add/", views.add_pickup_items, name="add_pickup_items"),
     path("pickup-items/<int:pk>/remove/", views.remove_pickup_item, name="remove_pickup_item"),
     path("items/create/", views.create_item, name="create_item"),
-    
+    path("items/<int:pk>/update-price/", views.update_item_price, name="update_item_price"),
     path('staff/', views.list_staff, name='list_staff'),
     path('staff/mark-attendance/', views.mark_attendance, name='mark_attendance'),
     path('staff/add-advance/', views.add_advance, name='add_advance'),

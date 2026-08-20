@@ -136,17 +136,11 @@
           <span class="badge rounded-pill text-bg-success">{{ total_qty }} pcs</span>
         {% endif %}
         <div class="items-section__add-group">
-          <a href="{% url 'add_pickup_items_page' pickup.pk %}?category=i" class="items-section__add items-section__add--iron">
+          <a href="{% url 'add_pickup_items_page' pickup.pk %}" class="items-section__add">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            Ironing
-          </a>
-          <a href="{% url 'add_pickup_items_page' pickup.pk %}?category=d" class="items-section__add items-section__add--dry">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            Dry Cleaning
+            Add Items
           </a>
         </div>
       </div>
@@ -434,10 +428,6 @@
     white-space: nowrap;
   }
   .items-section__add:active{ background: var(--wa-border); }
-  .items-section__add--iron{ color: #B8860B; }
-  .items-section__add--iron:active{ background: #FFF4E0; }
-  .items-section__add--dry{ color: #1565C0; }
-  .items-section__add--dry:active{ background: #E3F2FD; }
   .items-section__empty{ font-size: 0.85rem; color: var(--wa-text-muted); margin: 0; }
 
   .item-row{

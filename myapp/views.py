@@ -14,7 +14,7 @@ from django.core.paginator import Paginator
 from django.contrib.auth import get_user_model
 from django.db.models import Sum, F, Count
 from django.urls import reverse
-from django.http import Http404
+from django.http import Http404,JsonResponse
 from .forms import LocationForm,PickupForm
 from .models import Location, Pickup, PickupItem, Item, Employee, Attendance, Advance
 from .utils import get_project_activity, TRACKED_MODELS,staff_required, _date_group_label, _send_telegram, _telegram_enabled, _avatar_color
@@ -248,9 +248,9 @@ def view_pickup(request, pk):
 @staff_required
 def add_pickup_items_page(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
-    category = request.GET.get("category", "d")
+    category = request.GET.get("category", "i")
     if category not in ("d", "i"):
-        category = "d"
+        category = "i"
     context = {
         "pickup": pickup,
         "category": category,
@@ -341,6 +341,24 @@ def create_item(request):
     Item.objects.create(name=name,item_category=category,price=int(request.POST["price"]))
     messages.success(request, "Item created.")
     return redirect("view_pickup", pk=pickup_pk)
+
+@staff_required
+def update_item_price(request, pk):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "POST required"}, status=405)
+
+    item = get_object_or_404(Item, pk=pk)
+    raw_price = (request.POST.get("price") or "").strip()
+    try:
+        price = int(raw_price)
+        if price < 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return JsonResponse({"ok": False, "error": "Invalid price"}, status=400)
+
+    item.price = price
+    item.save(update_fields=["price"])
+    return JsonResponse({"ok": True, "price": item.price})
 
 @staff_required
 def mark_pickup_paid(request, pk):
