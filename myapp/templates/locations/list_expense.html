@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Expenses{% endblock %}
+
+{% block chat_header_title %}Expenses{% endblock %}
+
+{% block page_content %}
+  <div class="expense-total-band">
+    <div>
+      <p class="expense-total-band__label">This month</p>
+      <p class="expense-total-band__value">&#8377;{{ month_total }}</p>
+    </div>
+    <a href="{% url 'add_expense' %}" class="expense-total-band__add">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Add
+    </a>
+  </div>
+
+  <main class="chat-list has-bottom-nav" role="list">
+    {% for group in grouped_expenses %}
+      <div class="date-divider"><span class="date-divider__pill">{{ group.label }}</span></div>
+
+      {% for expense in group.expenses %}
+        <div class="expense-row">
+          <div class="expense-row__icon expense-row__icon--{{ expense.category }}">
+            {{ expense.get_category_display|slice:":1" }}
+          </div>
+          <div class="expense-row__body">
+            <div class="expense-row__top">
+              <span class="expense-row__category">{{ expense.get_category_display }}</span>
+              <span class="expense-row__amount">&#8377;{{ expense.amount }}</span>
+            </div>
+            <div class="expense-row__bottom">
+              <span class="expense-row__note">
+                {% if expense.covers_period %}
+                  <span class="expense-row__period-tag">{{ expense.period_label }}</span>
+                {% endif %}
+                {{ expense.note|default:"" }}
+              </span>
+            </div>
+          </div>
+          <form method="post" action="{% url 'delete_expense' expense.pk %}"
+                class="expense-row__delete-form"
+                onsubmit="return confirm('Remove this expense of ₹{{ expense.amount }}?');">
+            {% csrf_token %}
+            <button type="submit" class="expense-row__delete" aria-label="Remove expense">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6"/><path d="M14 11v6"/>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+            </button>
+          </form>
+        </div>
+      {% endfor %}
+    {% empty %}
+      <div class="chat-empty">
+        <p class="chat-empty__title">No expenses yet</p>
+        <p class="chat-empty__text">Tap "Add" to record your first expense.</p>
+      </div>
+    {% endfor %}
+  </main>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="pagination" aria-label="Expense pages">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" class="pagination__btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </a>
+    {% else %}
+      <span class="pagination__btn pagination__btn--disabled">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </span>
+    {% endif %}
+
+    <span class="pagination__label">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" class="pagination__btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </a>
+    {% else %}
+      <span class="pagination__btn pagination__btn--disabled">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </span>
+    {% endif %}
+  </nav>
+  {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+  .expense-total-band{
+    background: var(--wa-accent); color: #fff;
+    padding: 16px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .expense-total-band__label{ font-size: 0.85rem; opacity: 0.9; margin: 0; }
+  .expense-total-band__value{ font-size: 1.5rem; font-weight: 800; margin: 2px 0 0; }
+  .expense-total-band__add{
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.2); color: #fff; text-decoration: none;
+    border-radius: 20px; padding: 8px 16px; font-size: 0.85rem; font-weight: 600;
+  }
+  .expense-total-band__add:active{ background: rgba(255,255,255,0.3); }
+
+  .date-divider{ display: flex; justify-content: center; padding: 12px 0 6px; }
+  .date-divider__pill{
+    background: var(--wa-border); color: var(--wa-text-muted);
+    font-size: 0.72rem; font-weight: 600; padding: 4px 14px; border-radius: 12px;
+  }
+
+  .chat-list{ flex: 1; overflow-y: auto; }
+
+  .expense-row{
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px; border-bottom: 1px solid var(--wa-border);
+  }
+  .expense-row__icon{
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; text-transform: uppercase; font-size: 0.9rem;
+    background: var(--wa-bg); color: var(--wa-text-muted);
+  }
+  .expense-row__icon--supplies{ background: #E3F2FD; color: #1565C0; }
+  .expense-row__icon--maintenance{ background: #FDF0DA; color: #B8860B; }
+  .expense-row__icon--fuel{ background: #FDEAEA; color: var(--wa-danger); }
+  .expense-row__icon--utilities{ background: #EDE7F6; color: #5E35B1; }
+  .expense-row__icon--rent{ background: #E3F6EC; color: var(--wa-green-dark); }
+  .expense-row__icon--other{ background: var(--wa-border); color: var(--wa-text-muted); }
+
+  .expense-row__body{ flex: 1; min-width: 0; }
+  .expense-row__top{ display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .expense-row__category{ font-size: 0.95rem; font-weight: 600; color: var(--wa-text); }
+  .expense-row__amount{ font-size: 0.95rem; font-weight: 700; color: var(--wa-text); flex-shrink: 0; }
+  .expense-row__bottom{ margin-top: 2px; }
+  .expense-row__note{
+    font-size: 0.82rem; color: var(--wa-text-muted);
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .expense-row__period-tag{
+    font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em;
+    padding: 2px 7px; border-radius: 8px; background: var(--wa-bg); color: var(--wa-green);
+    flex-shrink: 0;
+  }
+
+  .expense-row__delete-form{ margin: 0; flex-shrink: 0; }
+  .expense-row__delete{
+    width: 28px; height: 28px; border-radius: 50%; border: none;
+    background: var(--wa-bg); color: var(--wa-text-muted);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .expense-row__delete:active{ background: #FDEAEA; color: var(--wa-danger); }
+
+  .chat-empty{ text-align: center; padding: 60px 24px; color: var(--wa-text-muted); }
+  .chat-empty__title{ font-weight: 600; color: var(--wa-text); margin-bottom: 4px; }
+  .chat-empty__text{ font-size: 0.9rem; margin: 0; }
+
+  .pagination{
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    padding: 14px 16px; background: #fff; border-top: 1px solid var(--wa-border);
+  }
+  .pagination__label{ font-size: 0.82rem; color: var(--wa-text-muted); font-weight: 600; }
+  .pagination__btn{
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--wa-bg); color: var(--wa-green); text-decoration: none;
+  }
+  .pagination__btn:active{ background: var(--wa-border); }
+  .pagination__btn--disabled{ color: var(--wa-border); pointer-events: none; }
+{% endblock %}

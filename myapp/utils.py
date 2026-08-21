@@ -6,13 +6,13 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from .models import (
     GeneralSettings, User, Location, Pickup, Item,
-    PickupItem, Employee, Advance, Attendance,
+    PickupItem, Employee, Advance, Attendance, Expense,
 )
 
 # Models we want to include in the unified activity feed
 TRACKED_MODELS = [
     GeneralSettings, User, Location, Pickup,
-    Item, PickupItem, Employee, Advance, Attendance,
+    Item, PickupItem, Employee, Advance, Attendance, Expense,
 ]
 
 ACTION_LABELS = {'+': 'Created', '~': 'Updated', '-': 'Deleted'}
@@ -74,17 +74,19 @@ def get_display_label(instance_record, model):
     if model is Location:
         return instance_record.name
     if model is Pickup:
-        return f"Pickup #{instance_record.id} ({instance_record.status})"
+        return f"Pickup #{instance_record.location.name} ({instance_record.status})"
     if model is Item:
         return instance_record.name
     if model is PickupItem:
         return f"PickupItem #{instance_record.id}"
     if model is Employee:
-        return f"Employee #{instance_record.id}"
+        return f"Employee #{instance_record.user.username}"
     if model is Advance:
         return f"Advance #{instance_record.id}"
     if model is Attendance:
         return f"Attendance #{instance_record.id}"
+    if model is Expense:
+        return f"Expense #{instance_record.id}"
     if model is User:
         return instance_record.username
     if model is GeneralSettings:

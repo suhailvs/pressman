@@ -134,6 +134,51 @@ class Advance(models.Model):
     history = HistoricalRecords()
     def __str__(self):
         return f"{self.employee.user.get_full_name()} - {self.amount} on {self.date}"
+
+class Expense(models.Model):
+    CATEGORY_TEA = "tea"    
+    CATEGORY_ELECTRICITY = "electricity"
+    CATEGORY_RENT = "rent"
+    CATEGORY_OTHER = "other"
+    CATEGORY_CHOICES = [
+        (CATEGORY_TEA, "Tea"),
+        (CATEGORY_ELECTRICITY, "Electricity"),
+        (CATEGORY_RENT, "Rent"),
+        (CATEGORY_OTHER, "Other"),
+    ]
+
+    date = models.DateField(default=timezone.localdate)
+    amount = models.PositiveIntegerField()
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default=CATEGORY_OTHER)
+    note = models.CharField(max_length=200, blank=True)
+    # Leave both blank for a normal same-day expense. Fill these in for
+    # periodic bills (e.g. rent for a month, electricity for two months)
+    # so the expense can be attributed to the period it actually covers,
+    # not just the day it was paid.
+    period_start = models.DateField(blank=True, null=True)
+    period_end = models.DateField(blank=True, null=True)
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='expenses')
+    created_at = models.DateTimeField(auto_now_add=True)
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ["-date", "-created_at"]
+
+    def __str__(self):
+        return f"{self.get_category_display()} - {self.amount} on {self.date}"
+
+    @property
+    def covers_period(self):
+        """True if this expense is tied to a date range rather than a single day."""
+        return bool(self.period_start and self.period_end)
+
+    @property
+    def period_label(self):
+        if not self.covers_period:
+            return None
+        if self.period_start.strftime("%b %Y") == self.period_end.strftime("%b %Y"):
+            return self.period_start.strftime("%b %Y")
+        return f"{self.period_start.strftime('%b %Y')} – {self.period_end.strftime('%b %Y')}"
     
 class Attendance(models.Model):
     DAY_TYPE_CHOICES = [('full', 'Full Day'), ('half', 'Half Day')]
@@ -147,3 +192,4 @@ class Attendance(models.Model):
         unique_together = ('employee', 'date')
     def __str__(self):
         return f"{self.employee.user.get_full_name()} - {self.date} ({self.day_type})"
+

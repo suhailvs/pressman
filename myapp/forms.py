@@ -1,8 +1,9 @@
 import re
 import requests
+from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from django import forms
-from .models import Location,Pickup
+from .models import Location,Pickup,Expense
 
 
 class LocationForm(forms.ModelForm):
@@ -154,4 +155,133 @@ class PickupForm(forms.ModelForm):
                 # "capture": "environment",
             }),
         }
- 
+
+class ExpenseForm(forms.ModelForm):
+    is_periodic = forms.BooleanField(
+        required=False,
+        label="This covers a period (e.g. rent, electricity bill)",
+        widget=forms.CheckboxInput(attrs={"id": "id_is_periodic"}),
+    )
+
+    class Meta:
+        model = Expense
+        fields = ["date", "amount", "category", "note", "period_start", "period_end"]
+        widgets = {
+            "date": forms.DateInput(attrs={
+                "class": "field__input",
+                "type": "date",
+            }),
+            "amount": forms.NumberInput(attrs={
+                "class": "field__input",
+                "min": "1",
+                "step": "1",
+                "inputmode": "decimal",
+                "placeholder": "0",
+            }),
+            "category": forms.Select(attrs={
+                "class": "field__input",
+            }),
+            "note": forms.TextInput(attrs={
+                "class": "field__input",
+                "placeholder": "What was this for? (optional)",
+            }),
+            "period_start": forms.DateInput(attrs={
+                "class": "field__input",
+                "type": "date",
+                "id": "id_period_start",
+            }),
+            "period_end": forms.DateInput(attrs={
+                "class": "field__input",
+                "type": "date",
+                "id": "id_period_end",
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["period_start"].required = False
+        self.fields["period_end"].required = False
+        if self.instance and self.instance.pk and self.instance.covers_period:
+            self.fields["is_periodic"].initial = True
+
+    def clean(self):
+        cleaned_data = super().clean()
+        is_periodic = cleaned_data.get("is_periodic")
+        period_start = cleaned_data.get("period_start")
+        period_end = cleaned_data.get("period_end")
+
+        if is_periodic:
+            if not period_start or not period_end:
+                self.add_error(
+                    "period_start" if not period_start else "period_end",
+                    "Enter both a start and end date for the period this covers.",
+                )
+            elif period_end < period_start:
+                self.add_error("period_end", "End date can't be before the start date.")
+        else:
+            cleaned_data["period_start"] = None
+            cleaned_data["period_end"] = None
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        """
+        Kept for API compatibility — always use save_all() instead, which
+        handles the periodic split into multiple daily entries. This just
+        saves a single non-periodic entry.
+        """
+        instance = super().save(commit=False)
+        instance.period_start = None
+        instance.period_end = None
+        if commit:
+            instance.save()
+        return instance
+
+    def save_all(self, added_by=None):
+        """
+        Save this form. For a normal (non-periodic) expense this creates one
+        Expense row. For a periodic expense (period_start/period_end set),
+        this splits the total amount evenly across every day in the range —
+        one Expense row per day — so each day carries its own share, with
+        any remainder (from amounts that don't divide evenly) added to the
+        first few days so the split always sums back to the exact total.
+
+        Returns a list of the saved Expense instances (length 1 for a
+        non-periodic expense).
+        """
+        is_periodic = self.cleaned_data.get("is_periodic")
+        category = self.cleaned_data["category"]
+        note = self.cleaned_data.get("note", "")
+        amount = self.cleaned_data["amount"]
+
+        if not is_periodic:
+            instance = super().save(commit=False)
+            instance.period_start = None
+            instance.period_end = None
+            instance.added_by = added_by
+            instance.save()
+            return [instance]
+
+        period_start = self.cleaned_data["period_start"]
+        period_end = self.cleaned_data["period_end"]
+        num_days = (period_end - period_start).days + 1
+
+        base_amount, remainder = divmod(amount, num_days)
+
+        entries = []
+        for i in range(num_days):
+            day = period_start + timedelta(days=i)
+            # Give the extra rupees (from the remainder) to the first
+            # `remainder` days, so the entries sum to exactly `amount`.
+            day_amount = base_amount + (1 if i < remainder else 0)
+            entry = Expense.objects.create(
+                date=day,
+                amount=day_amount,
+                category=category,
+                note=note,
+                period_start=period_start,
+                period_end=period_end,
+                added_by=added_by,
+            )
+            entries.append(entry)
+        return entries

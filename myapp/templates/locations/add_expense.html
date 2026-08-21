@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Add Expense{% endblock %}
+
+{% block chat_header %}
+<header class="chat-header">
+  <a href="{% url 'list_expense' %}" class="icon-btn" aria-label="Back">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+  </a>
+  <h1 class="chat-header__title">Add Expense</h1>
+</header>
+{% endblock %}
+
+{% block page_content %}
+  <form class="add-form" method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert-error">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="field">
+      <label class="field__label" for="{{ form.amount.id_for_label }}">Amount (&#8377;)</label>
+      {{ form.amount }}
+      {% if form.amount.errors %}<p class="field__error">{{ form.amount.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="{{ form.category.id_for_label }}">Category</label>
+      {{ form.category }}
+      {% if form.category.errors %}<p class="field__error">{{ form.category.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="{{ form.date.id_for_label }}">Date paid</label>
+      {{ form.date }}
+      {% if form.date.errors %}<p class="field__error">{{ form.date.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="{{ form.note.id_for_label }}">Note</label>
+      {{ form.note }}
+      {% if form.note.errors %}<p class="field__error">{{ form.note.errors.0 }}</p>{% endif %}
+    </div>
+
+    <!-- Periodic toggle -->
+    <label class="periodic-toggle" for="{{ form.is_periodic.id_for_label }}">
+      {{ form.is_periodic }}
+      <span>{{ form.is_periodic.label }}</span>
+    </label>
+
+    <div class="period-fields" id="period-fields">
+      <div class="field-row">
+        <div class="field">
+          <label class="field__label" for="{{ form.period_start.id_for_label }}">Period start</label>
+          {{ form.period_start }}
+          {% if form.period_start.errors %}<p class="field__error">{{ form.period_start.errors.0 }}</p>{% endif %}
+        </div>
+        <div class="field">
+          <label class="field__label" for="{{ form.period_end.id_for_label }}">Period end</label>
+          {{ form.period_end }}
+          {% if form.period_end.errors %}<p class="field__error">{{ form.period_end.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+      <p class="field__hint">e.g. rent for August, or an electricity bill covering two months.</p>
+    </div>
+
+    <button type="submit" class="save-btn">Save expense</button>
+  </form>
+{% endblock %}
+
+{% block extra_css %}
+  .periodic-toggle{
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 0; margin-bottom: 4px;
+    font-size: 0.9rem; color: var(--wa-text);
+  }
+  .periodic-toggle input{ width: 18px; height: 18px; accent-color: var(--wa-green); flex-shrink: 0; }
+
+  .period-fields{ display: none; padding-top: 6px; }
+  .period-fields.is-visible{ display: block; }
+  .field__hint{ font-size: 0.76rem; color: var(--wa-text-muted); margin: -8px 0 14px; }
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const checkbox = document.getElementById("{{ form.is_periodic.id_for_label }}");
+    const periodFields = document.getElementById("period-fields");
+
+    function syncVisibility() {
+      periodFields.classList.toggle("is-visible", checkbox.checked);
+    }
+
+    if (checkbox) {
+      syncVisibility();
+      checkbox.addEventListener("change", syncVisibility);
+    }
+  });
+</script>
+{% endblock %}

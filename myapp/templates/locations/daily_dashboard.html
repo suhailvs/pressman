@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Daily Dashboard{% endblock %}
+
+{% block chat_header_title %}Daily Dashboard{% endblock %}
+
+{% block page_content %}
+  <div class="dd-day-nav">
+    <a href="?date={{ prev_day|date:'Y-m-d' }}">&larr; Prev</a>
+    <span class="dd-day-nav__label">{{ day|date:"D, j M Y" }}{% if is_today %} <span class="dd-day-nav__today-tag">Today</span>{% endif %}</span>
+    {% if is_today %}
+      <span style="width:52px;"></span>
+    {% else %}
+      <a href="?date={{ next_day|date:'Y-m-d' }}">Next &rarr;</a>
+    {% endif %}
+  </div>
+
+  <!-- Profit / Loss band -->
+  <div class="dd-profit-band {% if profit < 0 %}dd-profit-band--loss{% endif %}">
+    <p class="dd-profit-band__label">{% if profit < 0 %}Loss today{% else %}Profit today{% endif %}</p>
+    <p class="dd-profit-band__value">&#8377;{{ profit }}</p>
+    <p class="dd-profit-band__formula">&#8377;{{ total_received }} received &minus; &#8377;{{ total_expense }} expenses</p>
+  </div>
+
+  <div class="dd-section-label">Payments received</div>
+  <div class="dd-summary">
+    <div class="dd-summary__card">
+      <p class="dd-summary__label">UPI</p>
+      <p class="dd-summary__value">&#8377;{{ upi_total }}</p>
+    </div>
+    <div class="dd-summary__card">
+      <p class="dd-summary__label">Cash</p>
+      <p class="dd-summary__value">&#8377;{{ cash_total }}</p>
+    </div>
+    <div class="dd-summary__card dd-summary__card--total">
+      <p class="dd-summary__label">Total</p>
+      <p class="dd-summary__value">&#8377;{{ total_received }}</p>
+    </div>
+  </div>
+  {% for pickup in paid_pickups %}
+    <div class="dd-item-row">
+      <div class="dd-item-row__body">
+        <p class="dd-item-row__title">{{ pickup.location.name }}</p>
+        <p class="dd-item-row__sub">{{ pickup.paid_at|date:"g:i A" }} &middot; {{ pickup.get_payment_method_display }}</p>
+      </div>
+      <p class="dd-item-row__value">&#8377;{{ pickup.amount_paid }}</p>
+    </div>
+  {% empty %}
+    <p class="dd-item-empty">No payments received.</p>
+  {% endfor %}
+
+  <div class="dd-section-label">Sales</div>
+  <div class="dd-single-card">
+    <div>
+      <p class="dd-single-card__label">Value of items added today</p>
+      <p class="dd-single-card__hint">From pickups where items were entered today</p>
+    </div>
+    <p class="dd-single-card__value">&#8377;{{ total_sales }}</p>
+  </div>
+
+  <div class="dd-section-label">Expenses</div>
+  <div class="dd-summary dd-summary--three">
+    <div class="dd-summary__card">
+      <p class="dd-summary__label">Wages</p>
+      <p class="dd-summary__value">&#8377;{{ wage_total }}</p>
+    </div>
+    <div class="dd-summary__card">
+      <p class="dd-summary__label">Advances</p>
+      <p class="dd-summary__value">&#8377;{{ advance_total }}</p>
+    </div>
+    <div class="dd-summary__card">
+      <p class="dd-summary__label">Other</p>
+      <p class="dd-summary__value">&#8377;{{ other_expense_total }}</p>
+    </div>
+  </div>
+  <div class="dd-single-card dd-single-card--muted">
+    <p class="dd-single-card__label">Total expenses</p>
+    <p class="dd-single-card__value">&#8377;{{ total_expense }}</p>
+  </div>
+
+  <div class="dd-sub-label">Wages</div>
+  {% for row in wage_rows %}
+    <div class="dd-item-row">
+      <div class="dd-item-row__body">
+        <p class="dd-item-row__title">{{ row.name }}</p>
+        <p class="dd-item-row__sub">{% if row.day_type == "full" %}Full day{% else %}Half day{% endif %}</p>
+      </div>
+      <p class="dd-item-row__value">&#8377;{{ row.wage }}</p>
+    </div>
+  {% empty %}
+    <p class="dd-item-empty">No attendance marked.</p>
+  {% endfor %}
+
+  <div class="dd-sub-label">Advances</div>
+  {% for adv in advances_today %}
+    <div class="dd-item-row">
+      <div class="dd-item-row__body">
+        <p class="dd-item-row__title">{{ adv.employee.user.get_full_name|default:adv.employee.user.username }}</p>
+        <p class="dd-item-row__sub">{{ adv.note|default:"Advance" }}</p>
+      </div>
+      <p class="dd-item-row__value">&#8377;{{ adv.amount }}</p>
+    </div>
+  {% empty %}
+    <p class="dd-item-empty">No advances given.</p>
+  {% endfor %}
+
+  <div class="dd-sub-label">Other expenses</div>
+  {% for exp in expenses_today %}
+    <div class="dd-item-row">
+      <div class="dd-item-row__body">
+        <p class="dd-item-row__title">{{ exp.get_category_display }}</p>
+        <p class="dd-item-row__sub">
+          {% if exp.covers_period %}<span class="dd-item-row__period-tag">{{ exp.period_label }}</span>{% endif %}
+          {{ exp.note|default:"" }}
+        </p>
+      </div>
+      <p class="dd-item-row__value">&#8377;{{ exp.amount }}</p>
+    </div>
+  {% empty %}
+    <p class="dd-item-empty">No other expenses.</p>
+  {% endfor %}
+{% endblock %}
+
+{% block extra_css %}
+  .dd-day-nav{
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: #fff; border-bottom: 1px solid var(--wa-border);
+  }
+  .dd-day-nav a{
+    color: var(--wa-accent); text-decoration: none;
+    padding: 6px 10px; font-size: 0.85rem; font-weight: 600;
+  }
+  .dd-day-nav__label{ font-weight: 700; font-size: 0.95rem; color: var(--wa-text); }
+  .dd-day-nav__today-tag{
+    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    background: #E4F5EE; color: var(--wa-green); padding: 2px 7px; border-radius: 8px;
+    vertical-align: middle;
+  }
+
+  .dd-profit-band{
+    background: var(--wa-accent); color: #fff;
+    padding: 20px 16px; margin-bottom: 4px; text-align: center;
+  }
+  .dd-profit-band--loss{ background: var(--wa-danger); }
+  .dd-profit-band__label{ font-size: 0.85rem; opacity: 0.9; margin: 0; }
+  .dd-profit-band__value{ font-size: 2rem; font-weight: 800; margin: 4px 0; }
+  .dd-profit-band__formula{ font-size: 0.78rem; opacity: 0.85; margin: 0; }
+
+  .dd-section-label{
+    padding: 14px 16px 6px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
+    color: var(--wa-text-muted); text-transform: uppercase;
+    background: #fff;
+  }
+
+  .dd-summary{
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px; background: var(--wa-border);
+  }
+  .dd-summary--three{ grid-template-columns: 1fr 1fr 1fr; }
+  .dd-summary__card{ background: #fff; padding: 14px 16px; }
+  .dd-summary__card--total{ background: var(--wa-bg); }
+  .dd-summary__label{ font-size: 0.75rem; color: var(--wa-text-muted); margin: 0; text-transform: uppercase; letter-spacing: 0.03em; }
+  .dd-summary__value{ font-size: 1.15rem; font-weight: 700; color: var(--wa-text); margin: 4px 0 0; }
+
+  .dd-single-card{
+    background: #fff; padding: 14px 16px; margin: 1px 0 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .dd-single-card--muted{ background: var(--wa-bg); }
+  .dd-single-card__label{ font-size: 0.85rem; color: var(--wa-text); margin: 0; font-weight: 600; }
+  .dd-single-card__hint{ font-size: 0.75rem; color: var(--wa-text-muted); margin: 2px 0 0; }
+  .dd-single-card__value{ font-size: 1.15rem; font-weight: 700; color: var(--wa-text); margin: 0; }
+
+  .dd-sub-label{
+    padding: 12px 16px 4px;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.03em;
+    color: var(--wa-text-muted); text-transform: uppercase;
+    background: var(--wa-bg);
+  }
+
+  .dd-item-row{
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--wa-border);
+  }
+  .dd-item-row__body{ min-width: 0; }
+  .dd-item-row__title{ font-size: 0.9rem; font-weight: 600; color: var(--wa-text); margin: 0; }
+  .dd-item-row__sub{ font-size: 0.78rem; color: var(--wa-text-muted); margin: 2px 0 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .dd-item-row__value{ font-size: 0.92rem; font-weight: 700; color: var(--wa-text); flex-shrink: 0; margin: 0; }
+  .dd-item-row__period-tag{
+    font-size: 0.66rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em;
+    padding: 2px 7px; border-radius: 8px; background: var(--wa-bg); color: var(--wa-green);
+  }
+  .dd-item-empty{
+    padding: 14px 16px; margin: 0; background: #fff;
+    font-size: 0.85rem; color: var(--wa-text-muted); border-bottom: 1px solid var(--wa-border);
+  }
+{% endblock %}

@@ -99,6 +99,21 @@
 {% block chat_header_title %}Staff:{{ request.user.first_name }}{% endblock %}
 {% block chat_header_actions %}
   {% if request.user.is_staff %}
+  <a href="{% url 'add_expense' %}" class="icon-btn" aria-label="Add expense">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 2h12a1 1 0 0 1 1 1v18l-2.5-1.5L14 21l-2-1.5L10 21l-2.5-1.5L5 21V3a1 1 0 0 1 1-1z"/>
+      <line x1="8" y1="7" x2="16" y2="7"/>
+      <line x1="8" y1="11" x2="16" y2="11"/>
+      <line x1="8" y1="15" x2="12.5" y2="15"/>
+    </svg>
+  </a>
+  <a href="{% url 'daily_dashboard' %}" class="icon-btn" aria-label="Daily dashboard">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/>
+      <line x1="12" y1="20" x2="12" y2="4"/>
+      <line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+  </a>
   <a href="{% url 'dashboard' %}" class="icon-btn" aria-label="Dashboard">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="3" y="3" width="7" height="9" rx="1"/>
@@ -186,24 +201,15 @@
       {% else %}
         <span class="status-pill status-pill--pending">Pending</span>
       {% endif %}
-    </a>
-  {% endfor %}
-  {% if request.user.is_staff %}
-    <div class="staff-section-label">This month</div>
-    {% for s in staff_month %}
-      <a href="{% url 'view_staff' s.id %}" class="staff-row">
-        <div class="staff-avatar" style="background: {{ s.color }};">{{ s.name|first|upper }}</div>
-        <div class="staff-row__body">
-          <p class="staff-row__name">{{ s.name }}</p>
-          <p class="staff-row__sub">{{ s.full_days }} full &middot; {{ s.half_days }} half &middot; &#8377;{{ s.advance }} advance</p>
-        </div>
+      {% if request.user.is_staff %}
         <div class="staff-row__meta">
           <p class="staff-row__net-label">Net</p>
           <p class="staff-row__net-value">&#8377;{{ s.net }}</p>
         </div>
-      </a>
-    {% endfor %}
-  {% endif %}
+      {% endif %}
+    </a>
+  {% endfor %}
+  
   <!-- Change password modal -->
   <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">

@@ -15,8 +15,8 @@ from django.contrib.auth import get_user_model
 from django.db.models import Sum, F, Count
 from django.urls import reverse
 from django.http import Http404,JsonResponse
-from .forms import LocationForm,PickupForm
-from .models import Location, Pickup, PickupItem, Item, Employee, Attendance, Advance
+from .forms import LocationForm,PickupForm,ExpenseForm
+from .models import Location, Pickup, PickupItem, Item, Employee, Attendance, Advance, Expense
 from .utils import get_project_activity, TRACKED_MODELS,staff_required, _date_group_label, _send_telegram, _telegram_enabled, _avatar_color
 from .utils import get_tracked_model_by_name, get_display_label
 User = get_user_model()
@@ -433,28 +433,150 @@ def set_pickup_status(request, pk, status):
         )
     messages.success(request, f"Marked as {pickup.get_status_display()}.")
     return redirect(request.META.get("HTTP_REFERER", "list_pickup"))
+
+
+@staff_required
+def list_expense(request):
+    expenses_qs = Expense.objects.select_related("added_by").all()
+
+    paginator = Paginator(expenses_qs, 50)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    today = timezone.localdate()
+    month_start = today.replace(day=1)
+    month_total = Expense.objects.filter(
+        date__gte=month_start, date__lte=today
+    ).aggregate(t=Sum("amount"))["t"] or 0
+
+    def group_date(e):
+        return e.date
+
+    grouped_expenses = [
+        {"label": _date_group_label(d, today), "expenses": list(items)}
+        for d, items in groupby(page_obj.object_list, key=group_date)
+    ]
+
+    return render(request, "locations/list_expense.html", {
+        "page_obj": page_obj,
+        "grouped_expenses": grouped_expenses,
+        "month_total": month_total,
+        "today": today,
+    })
+
+
+@staff_required
+def add_expense(request):
+    if request.method == "POST":
+        form = ExpenseForm(request.POST)
+        if form.is_valid():
+            entries = form.save_all(added_by=request.user)
+            if len(entries) > 1:
+                total = sum(e.amount for e in entries)
+                messages.success(
+                    request,
+                    f"Split into {len(entries)} daily entries (₹{total} total)."
+                )
+            else:
+                messages.success(request, "Expense added.")
+            return redirect("list_expense")
+    else:
+        form = ExpenseForm(initial={"date": timezone.localdate()})
+    return render(request, "locations/add_expense.html", {"form": form})
+
+
+@staff_required
+def delete_expense(request, pk):
+    expense = get_object_or_404(Expense, pk=pk)
+    if request.method == "POST":
+        expense.delete()
+        messages.success(request, "Expense removed.")
+    return redirect("list_expense")
+
+
+@staff_required
+def daily_dashboard(request):
+    today = timezone.localdate()
+    date_str = request.GET.get("date")
+    try:
+        day = date.fromisoformat(date_str) if date_str else today
+    except ValueError:
+        day = today
  
+    # --- Payments received (money actually collected today) ---
+    paid_today = Pickup.objects.filter(paid_at__date=day).select_related("location").order_by("-paid_at")
+    upi_total = 0
+    cash_total = 0
+    for p in paid_today:
+        if p.payment_method == Pickup.PAYMENT_UPI:
+            upi_total += p.amount_paid or 0
+        elif p.payment_method == Pickup.PAYMENT_CASH:
+            cash_total += p.amount_paid or 0
+    total_received = upi_total + cash_total
+ 
+    # --- Sales: value of items added to pickups today ---
+    total_sales = PickupItem.objects.filter(created_at__date=day).aggregate(
+        t=Sum(F("price") * F("quantity"))
+    )["t"] or 0
+ 
+    # --- Expenses: wages earned today, advances given today, other expenses today ---
+    todays_attendance = Attendance.objects.filter(date=day).select_related("employee__user").order_by("employee__user__first_name")
+    wage_rows = []
+    wage_total = 0
+    for a in todays_attendance:
+        wage = a.employee.daily_wage if a.day_type == "full" else a.employee.daily_wage // 2
+        wage_total += wage
+        wage_rows.append({
+            "name": a.employee.user.get_full_name() or a.employee.user.username,
+            "day_type": a.day_type,
+            "wage": wage,
+        })
+ 
+    advances_today = Advance.objects.filter(date=day).select_related("employee__user").order_by("-id")
+    advance_total = advances_today.aggregate(t=Sum("amount"))["t"] or 0
+ 
+    expenses_today = Expense.objects.filter(date=day).order_by("-id")
+    other_expense_total = expenses_today.aggregate(t=Sum("amount"))["t"] or 0
+ 
+    total_expense = wage_total + advance_total + other_expense_total
+ 
+    profit = total_received - total_expense
+ 
+    prev_day = day - timezone.timedelta(days=1)
+    next_day = day + timezone.timedelta(days=1)
+ 
+    context = {
+        "day": day,
+        "today": today,
+        "is_today": day == today,
+        "prev_day": prev_day,
+        "next_day": next_day,
+        "upi_total": upi_total,
+        "cash_total": cash_total,
+        "total_received": total_received,
+        "total_sales": total_sales,
+        "wage_total": wage_total,
+        "advance_total": advance_total,
+        "other_expense_total": other_expense_total,
+        "total_expense": total_expense,
+        "profit": profit,
+        "paid_pickups": paid_today,
+        "wage_rows": wage_rows,
+        "advances_today": advances_today,
+        "expenses_today": expenses_today,
+    }
+    return render(request, "locations/daily_dashboard.html", context)
+
+
 @login_required
 def list_staff(request):
     today = timezone.localdate()
     employees = Employee.objects.filter(is_active=True).order_by('user__first_name')
- 
+
     todays_attendance = {
         a.employee_id: a
         for a in Attendance.objects.filter(employee__in=employees, date=today)
     }
- 
-    staff_today = []
-    for emp in employees:
-        att = todays_attendance.get(emp.id)
-        staff_today.append({
-            'id': emp.id,
-            'name': emp.user.get_full_name() or emp.user.username,
-            'color': _avatar_color(emp.id),
-            'marked_time': timezone.localtime(att.marked_at).strftime('%-I:%M %p') if att else None,
-            'status': att.day_type if att else 'pending',
-        })
- 
+
     month_start = today.replace(day=1)
     month_attendance = Attendance.objects.filter(
         employee__in=employees, date__gte=month_start, date__lte=today,
@@ -462,36 +584,34 @@ def list_staff(request):
     month_advances = Advance.objects.filter(
         employee__in=employees, date__gte=month_start, date__lte=today,
     )
- 
+
     full_counts, half_counts = {}, {}
     for a in month_attendance:
         bucket = full_counts if a.day_type == 'full' else half_counts
         bucket[a.employee_id] = bucket.get(a.employee_id, 0) + 1
- 
+
     advance_totals = {}
     for adv in month_advances:
         advance_totals[adv.employee_id] = advance_totals.get(adv.employee_id, 0) + adv.amount
- 
-    staff_month = []
+
+    staff_today = []
     for emp in employees:
+        att = todays_attendance.get(emp.id)
         full_days = full_counts.get(emp.id, 0)
         half_days = half_counts.get(emp.id, 0)
         advance = advance_totals.get(emp.id, 0)
-        # round() handles odd daily_wage * half-day (e.g. 501 wage -> 250.5 -> 251)
         earned = round(emp.daily_wage * (full_days + 0.5 * half_days))
-        staff_month.append({
+        staff_today.append({
             'id': emp.id,
             'name': emp.user.get_full_name() or emp.user.username,
             'color': _avatar_color(emp.id),
-            'full_days': full_days,
-            'half_days': half_days,
-            'advance': advance,
+            'marked_time': timezone.localtime(att.marked_at).strftime('%-I:%M %p') if att else None,
+            'status': att.day_type if att else 'pending',
             'net': earned - advance,
         })
- 
+
     return render(request, 'locations/list_staff.html', {
         'staff_today': staff_today,
-        'staff_month': staff_month,
         'today': today,
     })
  
