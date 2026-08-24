@@ -170,6 +170,23 @@ def location_edit(request, pk):
     )
 
 @staff_required
+def update_location_balance(request, pk):
+    location = get_object_or_404(Location, pk=pk)
+    if request.method == "POST":
+        raw_balance = request.POST.get("balance", "").strip()
+        if raw_balance == "":
+            location.balance = None
+        else:
+            try:
+                location.balance = int(raw_balance)
+            except ValueError:
+                messages.error(request, "Enter a valid whole number.")
+                return redirect("location_detail", pk=location.pk)
+        location.save(update_fields=["balance"])
+        messages.success(request, "Balance updated.")
+    return redirect("location_detail", pk=location.pk)
+
+@staff_required
 def location_map(request):
     locations = Location.objects.filter(is_active=True).exclude(latitude__isnull=True).exclude(longitude__isnull=True)
     return render(request, "locations/location_map.html", {"locations": locations})
@@ -437,16 +454,13 @@ def set_pickup_status(request, pk, status):
 
 @staff_required
 def list_expense(request):
-    expenses_qs = Expense.objects.select_related("added_by").all()
+    today = timezone.localdate()
+    expenses_qs = Expense.objects.select_related("added_by").filter(date=today)
 
     paginator = Paginator(expenses_qs, 50)
     page_obj = paginator.get_page(request.GET.get("page"))
 
-    today = timezone.localdate()
-    month_start = today.replace(day=1)
-    month_total = Expense.objects.filter(
-        date__gte=month_start, date__lte=today
-    ).aggregate(t=Sum("amount"))["t"] or 0
+    today_total = expenses_qs.aggregate(t=Sum("amount"))["t"] or 0
 
     def group_date(e):
         return e.date
@@ -459,7 +473,7 @@ def list_expense(request):
     return render(request, "locations/list_expense.html", {
         "page_obj": page_obj,
         "grouped_expenses": grouped_expenses,
-        "month_total": month_total,
+        "today_total": today_total,
         "today": today,
     })
 
@@ -478,7 +492,7 @@ def add_expense(request):
                 )
             else:
                 messages.success(request, "Expense added.")
-            return redirect("list_expense")
+            return redirect("daily_dashboard")
     else:
         form = ExpenseForm(initial={"date": timezone.localdate()})
     return render(request, "locations/add_expense.html", {"form": form})

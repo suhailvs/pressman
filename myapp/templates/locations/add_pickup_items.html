@@ -364,8 +364,11 @@
     if (firstSelect) initSelect2(firstSelect, categoryInput.value);
 
     addRowBtn.addEventListener("click", function () {
-      rowsContainer.appendChild(makeRow());
+      const row = makeRow();
+      rowsContainer.appendChild(row);
       refreshSelectOptions();
+      // Open the new row's select2 so its search box is focused and ready to type.
+      $(row.querySelector(".item-name-select")).select2("open");
     });
 
     rowsContainer.addEventListener("click", function (e) {

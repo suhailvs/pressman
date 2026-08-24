@@ -12,6 +12,7 @@ urlpatterns = [
     path("locations/add/", views.location_create, name="location_add"),
     path("locations/<int:pk>/", views.location_detail, name="location_detail"),
     path("locations/<int:pk>/edit/", views.location_edit, name="location_edit"),
+    path("locations/<int:pk>/balance/", views.update_location_balance, name="update_location_balance"),
     path("locations/map/", views.location_map, name="location_map"),
     
     path("pickups/<int:pk>/", views.view_pickup, name="view_pickup"),

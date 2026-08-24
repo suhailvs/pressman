@@ -23,6 +23,7 @@ class Location(models.Model):
     phone = models.CharField(max_length=20, blank=True, null=True)
     house_name = models.CharField(max_length=255, blank=True, null=True)
     photo = models.ImageField(upload_to="locations/", blank=True, null=True)
+    balance = models.IntegerField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

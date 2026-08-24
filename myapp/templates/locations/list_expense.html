@@ -3,13 +3,22 @@
 
 {% block title %}Expenses{% endblock %}
 
-{% block chat_header_title %}Expenses{% endblock %}
-
+{% block chat_header %}
+<header class="chat-header">
+  <a href="{% url 'daily_dashboard' %}" class="icon-btn" aria-label="Back">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+  </a>
+  <h1 class="chat-header__title">Expenses</h1>
+</header>
+{% endblock %}
 {% block page_content %}
   <div class="expense-total-band">
     <div>
-      <p class="expense-total-band__label">This month</p>
-      <p class="expense-total-band__value">&#8377;{{ month_total }}</p>
+      <p class="expense-total-band__label">Today</p>
+      <p class="expense-total-band__value">&#8377;{{ today_total }}</p>
     </div>
     <a href="{% url 'add_expense' %}" class="expense-total-band__add">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
@@ -59,8 +68,8 @@
       {% endfor %}
     {% empty %}
       <div class="chat-empty">
-        <p class="chat-empty__title">No expenses yet</p>
-        <p class="chat-empty__text">Tap "Add" to record your first expense.</p>
+        <p class="chat-empty__title">No expenses today</p>
+        <p class="chat-empty__text">Tap "Add" to record an expense for today.</p>
       </div>
     {% endfor %}
   </main>
