@@ -36,10 +36,11 @@ class Pickup(models.Model):
     STATUS_PICKED_UP = "picked_up"
     STATUS_DELIVERED = "delivered"
     STATUS_CANCELLED = "cancelled"
- 
+    STATUS_FINISHED = "finished"
     STATUS_CHOICES = [
         (STATUS_PENDING, "Pending"),
         (STATUS_PICKED_UP, "Picked Up"),
+        (STATUS_FINISHED, "Finished"),
         (STATUS_DELIVERED, "Delivered"),
         (STATUS_CANCELLED, "Cancelled"),
     ]

@@ -28,10 +28,17 @@
     </div>
   </div>
 
-  <label class="show-all-toggle">
-    <input type="checkbox" id="show-all-checkbox" {% if show_delivered %}checked{% endif %}>
-    Show delivered only
-  </label>
+  <ul class="nav nav-underline pickup-tabs">
+    <li class="nav-item">
+      <a class="nav-link {% if current_tab == 'pending' %}active{% endif %}" href="?tab=pending">Pickups</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if current_tab == 'finished' %}active{% endif %}" href="?tab=finished">Finished</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if current_tab == 'delivered' %}active{% endif %}" href="?tab=delivered">Delivered</a>
+    </li>
+  </ul>
 
   <!-- Pickup list -->
   <main class="chat-list has-bottom-nav" role="list">
@@ -74,7 +81,7 @@
         <div class="chat-row__top">
           <span class="chat-row__name">{{ pickup.location.name }}</span>
           <span class="chat-row__time">
-            {% if show_delivered and pickup.delivered_at %}
+            {% if current_tab == 'delivered' and pickup.delivered_at %}
               {{ pickup.delivered_at|date:"M j, g:i A" }}
             {% else %}
               {{ pickup.created_at|date:"M j, g:i A" }}
@@ -94,7 +101,7 @@
         </div>
       </div>
 
-      {% if not show_delivered and pickup.status != 'delivered' %}
+      {% if current_tab == 'pending' %}
       <div class="chat-row__quick-actions">
         {% if pickup.status == 'pending' %}
         <form method="post" action="{% url 'set_pickup_status' pickup.pk 'picked_up' %}" onclick="event.stopPropagation()">
@@ -106,6 +113,20 @@
           </button>
         </form>
         {% elif pickup.status == 'picked_up' %}
+        <form method="post" action="{% url 'set_pickup_status' pickup.pk 'finished' %}" onclick="event.stopPropagation()">
+          {% csrf_token %}
+          <button type="submit" class="quick-btn quick-btn--finished" aria-label="Mark as finished" title="Mark as finished">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6 9 17l-5-5"/>
+            </svg>
+          </button>
+        </form>
+        {% endif %}
+        </div>
+      {% endif %}
+
+      {% if current_tab == 'finished' %}
+      <div class="chat-row__quick-actions">
         <form method="post" action="{% url 'set_pickup_status' pickup.pk 'delivered' %}" onclick="event.stopPropagation()">
           {% csrf_token %}
           <button type="submit" class="quick-btn quick-btn--delivered" aria-label="Mark as delivered" title="Mark as delivered">
@@ -116,19 +137,21 @@
             </svg>
           </button>
         </form>
-        {% endif %}
       </div>
       {% endif %}
     </div>
     {% endfor %}
     {% empty %}
       <div class="chat-empty">
-        {% if show_delivered %}
+        {% if current_tab == 'delivered' %}
           <p class="chat-empty__title">No delivered pickups</p>
           <p class="chat-empty__text">Pickups you mark as delivered will show up here.</p>
+        {% elif current_tab == 'finished' %}
+          <p class="chat-empty__title">No finished pickups</p>
+          <p class="chat-empty__text">Pickups you mark as finished will show up here.</p>
         {% else %}
           <p class="chat-empty__title">No pending pickups</p>
-          <p class="chat-empty__text">Tick "Show delivered" to see delivered pickups.</p>
+          <p class="chat-empty__text">Use the tabs above to see finished or delivered pickups.</p>
         {% endif %}
       </div>
     {% endfor %}
@@ -144,7 +167,7 @@
   {% if page_obj.paginator.num_pages > 1 %}
   <nav class="pagination" aria-label="Pickup pages">
     {% if page_obj.has_previous %}
-      <a href="?show_delivered={{ show_delivered|yesno:'1,0' }}&page={{ page_obj.previous_page_number }}" class="pagination__btn">
+      <a href="?tab={{ current_tab }}&page={{ page_obj.previous_page_number }}" class="pagination__btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M15 18l-6-6 6-6"/>
         </svg>
@@ -160,7 +183,7 @@
     <span class="pagination__label">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
 
     {% if page_obj.has_next %}
-      <a href="?show_delivered={{ show_delivered|yesno:'1,0' }}&page={{ page_obj.next_page_number }}" class="pagination__btn">
+      <a href="?tab={{ current_tab }}&page={{ page_obj.next_page_number }}" class="pagination__btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 18l6-6-6-6"/>
         </svg>
@@ -194,13 +217,12 @@
     color: var(--wa-text-muted); flex-shrink: 0;
   }
 
-  /* Show all toggle */
-  .show-all-toggle{
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--wa-border);
-    font-size: 0.85rem; color: var(--wa-text-muted); cursor: pointer;
+  /* Tabs */
+  .pickup-tabs{
+    padding: 0 12px; background: #fff; border-bottom: 1px solid var(--wa-border);
   }
-  .show-all-toggle input{ accent-color: var(--wa-green); width: 16px; height: 16px; }
+  .pickup-tabs .nav-link{ color: var(--wa-text-muted); font-weight: 600; font-size: 0.88rem; padding: 10px 12px; }
+  .pickup-tabs .nav-link.active{ color: var(--wa-green); }
 
   .date-divider{
     display: flex; justify-content: center;
@@ -280,6 +302,8 @@
   }
   .quick-btn--picked{ background: #E3F2FD; color: #1565C0; }
   .quick-btn--picked:active{ background: #BBDEFB; }
+  .quick-btn--finished{ background: #FFF4E0; color: #B8860B; }
+  .quick-btn--finished:active{ background: #FCE4B4; }
   .quick-btn--delivered{ background: #E3F6EC; color: var(--wa-green-dark); }
   .quick-btn--delivered:active{ background: #C8ECD9; }
 
@@ -290,6 +314,7 @@
   }
   .status-badge--pending{ background: var(--wa-bg); color: var(--wa-text-muted); }
   .status-badge--picked_up{ background: #E3F2FD; color: #1565C0; }
+  .status-badge--finished{ background: #FFF4E0; color: #B8860B; }
   .status-badge--delivered{ background: #E3F6EC; color: var(--wa-green-dark); }
   .status-badge--cancelled{ background: #FDEAEA; color: #D64545; }
 
@@ -332,11 +357,5 @@
     });
   });
 
-  document.getElementById("show-all-checkbox").addEventListener("change", function () {
-    const url = new URL(window.location.href);
-    url.searchParams.set("show_delivered", this.checked ? "1" : "0");
-    url.searchParams.delete("page");
-    window.location.href = url.toString();
-  });
 </script>
 {% endblock %}

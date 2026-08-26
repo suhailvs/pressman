@@ -193,18 +193,23 @@ def location_map(request):
 
 @staff_required
 def list_pickup(request):
-    show_delivered = request.GET.get("show_delivered") == "1"
+    tab = request.GET.get("tab", "pending")
+    if tab not in ("pending", "finished", "delivered"):
+        tab = "pending"
+
     pickups_qs = Pickup.objects.select_related("location").exclude(
         status=Pickup.STATUS_CANCELLED
-    ).annotate(total_items=Sum("items__quantity"))
-    if show_delivered:
+    )
+    if tab == "finished":
+        pickups_qs = pickups_qs.filter(status=Pickup.STATUS_FINISHED).order_by("-updated_at")
+    elif tab == "delivered":
         pickups_qs = pickups_qs.filter(status=Pickup.STATUS_DELIVERED).order_by(
             F("delivered_at").desc(nulls_last=True)
         )
     else:
-        pickups_qs = pickups_qs.exclude(status=Pickup.STATUS_DELIVERED).order_by(
-            "-created_at"
-        )
+        pickups_qs = pickups_qs.exclude(
+            status__in=[Pickup.STATUS_FINISHED, Pickup.STATUS_DELIVERED]
+        ).order_by("-created_at")
 
     paginator = Paginator(pickups_qs, 50)
     page_obj = paginator.get_page(request.GET.get("page"))
@@ -212,7 +217,7 @@ def list_pickup(request):
     today = timezone.localdate()
 
     def group_date(p):
-        dt = p.delivered_at if (show_delivered and p.delivered_at) else p.created_at
+        dt = p.delivered_at if (tab == "delivered" and p.delivered_at) else p.created_at
         return timezone.localtime(dt).date()
 
     grouped_pickups = [
@@ -223,7 +228,7 @@ def list_pickup(request):
     return render(request, "locations/list_pickup.html", {
         "pickups": page_obj,
         "page_obj": page_obj,
-        "show_delivered": show_delivered,
+        "current_tab": tab,
         "grouped_pickups": grouped_pickups,
     })
     
@@ -428,7 +433,7 @@ def quick_add_pickup(request, pk):
 
 @staff_required
 def set_pickup_status(request, pk, status):
-    if status not in (Pickup.STATUS_PICKED_UP, Pickup.STATUS_DELIVERED):
+    if status not in (Pickup.STATUS_PICKED_UP, Pickup.STATUS_FINISHED, Pickup.STATUS_DELIVERED):
         return redirect(request.META.get("HTTP_REFERER", "list_pickup"))
  
     pickup = get_object_or_404(Pickup, pk=pk)
