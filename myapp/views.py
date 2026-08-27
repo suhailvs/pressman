@@ -221,7 +221,7 @@ def list_pickup(request):
         return timezone.localtime(dt).date()
 
     grouped_pickups = [
-        {"label": _date_group_label(d, today), "pickups": list(items)}
+        {"label": _date_group_label(d, today), "days_ago": (today - d).days,"pickups": list(items)}
         for d, items in groupby(page_obj.object_list, key=group_date)
     ]
 

@@ -43,8 +43,12 @@
   <!-- Pickup list -->
   <main class="chat-list has-bottom-nav" role="list">
   {% for group in grouped_pickups %}
-    <div class="date-divider"><span class="date-divider__pill">{{ group.label }}</span></div>
-
+    <div class="date-divider">
+      <span class="date-divider__pill">
+        {{ group.label }}
+        {% if group.days_ago >= 2 %}<span class="date-divider__ago">{{ group.days_ago }}d ago</span>{% endif %}
+      </span>
+    </div>
     {% for pickup in group.pickups %}
     <div class="chat-row"
          role="listitem"
@@ -116,8 +120,9 @@
         <form method="post" action="{% url 'set_pickup_status' pickup.pk 'finished' %}" onclick="event.stopPropagation()">
           {% csrf_token %}
           <button type="submit" class="quick-btn quick-btn--finished" aria-label="Mark as finished" title="Mark as finished">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20 6 9 17l-5-5"/>
+              <path d="M22 10 11 21l-3.5-3.5"/>
             </svg>
           </button>
         </form>
@@ -234,6 +239,12 @@
     font-size: 0.72rem; font-weight: 600;
     padding: 4px 14px; border-radius: 12px;
   }
+  .date-divider__ago{
+    font-weight: 500;
+    opacity: 0.75;
+    margin-left: 4px;
+  }
+  .date-divider__ago::before{ content: "· "; }
 
   /* Pagination */
   .pagination{

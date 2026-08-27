@@ -87,6 +87,11 @@
               {{ location.latitude }}, {{ location.longitude }}
             {% endif %}
           </span>
+          {% if location.balance %}
+            <span class="chat-row__balance {% if location.balance > 0 %}text-success{% else %}text-danger{% endif %}">
+              ₹{{ location.balance }}
+            </span>
+          {% endif %}
           <div class="chat-row__actions">
             <a href="https://www.google.com/maps?q={{ location.latitude }},{{ location.longitude }}"
                target="_blank" rel="noopener"
@@ -195,7 +200,10 @@
     font-size: 0.85rem; color: var(--wa-text-muted);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-
+  .chat-row__balance{
+    font-size: 0.78rem; font-weight: 600;
+    white-space: nowrap; margin-left: 8px; flex-shrink: 0;
+  }
   /* Row action buttons (navigate / quick add pickup) */
   .chat-row__actions{ display: flex; align-items: center; gap: 6px; margin-left: 8px; flex-shrink: 0; }
   .chat-row__action-form{ display: inline-flex; margin: 0; }
