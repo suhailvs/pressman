@@ -199,7 +199,7 @@ def list_pickup(request):
 
     pickups_qs = Pickup.objects.select_related("location").exclude(
         status=Pickup.STATUS_CANCELLED
-    )
+    ).annotate(total_items=Sum("items__quantity"))
     if tab == "finished":
         pickups_qs = pickups_qs.filter(status=Pickup.STATUS_FINISHED).order_by("-updated_at")
     elif tab == "delivered":
