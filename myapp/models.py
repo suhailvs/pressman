@@ -17,8 +17,8 @@ class User(AbstractUser):
     
 class Location(models.Model):
     name = models.CharField(max_length=255)
-    latitude = models.DecimalField(max_digits=10, decimal_places=7)
-    longitude = models.DecimalField(max_digits=10, decimal_places=7)
+    latitude = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
+    longitude = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
     # google_map_link = models.TextField(blank=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     house_name = models.CharField(max_length=255, blank=True, null=True)

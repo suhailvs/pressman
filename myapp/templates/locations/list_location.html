@@ -2,13 +2,13 @@
 {% load static %}
 {% load thumbnail %}
 
-{% block title %}Locations{% endblock %}
+{% block title %}Customers{% endblock %}
 {% block manifest %}
 <link rel="manifest" href="{% static 'pwa/manifest.webmanifest' %}">
 {% endblock %}
 
 
-{% block chat_header_title %}Locations{% endblock %}
+{% block chat_header_title %}Customers{% endblock %}
 {% block chat_header_actions %}
   <a href="{% url 'project_activity_history' %}" class="icon-btn" aria-label="Activity History">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -36,7 +36,7 @@
         type="search"
         id="search-input"
         class="chat-search__input"
-        placeholder="Search locations"
+        placeholder="Search customers"
         autocomplete="off">
       <a href="#" id="search-clear" class="chat-search__clear" aria-label="Clear search" style="display:none;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -118,8 +118,8 @@
     </div>
     {% empty %}
     <div class="chat-empty">
-      <p class="chat-empty__title">No locations yet</p>
-      <p class="chat-empty__text">Tap the + button to add your first location.</p>
+      <p class="chat-empty__title">No customers yet</p>
+      <p class="chat-empty__text">Tap the + button to add your first customer.</p>
     </div>
     {% endfor %}
 
@@ -132,7 +132,7 @@
   </main>
 
   <!-- Floating action button -->
-  <a href="{% url 'location_add' %}" class="fab" aria-label="Add new location">
+  <a href="{% url 'location_add' %}" class="fab" aria-label="Add new customer">
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
       <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
     </svg>

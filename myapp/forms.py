@@ -113,9 +113,9 @@ class LocationForm(forms.ModelForm):
             else:
                 cleaned_data["latitude"] = lat
                 cleaned_data["longitude"] = lng
-        elif not self.instance.pk:
-            # Creating a new location with no link at all
-            self.add_error("maps_url", "Please paste a Google Maps link.")
+        # elif not self.instance.pk:
+        #     # Creating a new location with no link at all
+        #     self.add_error("maps_url", "Please paste a Google Maps link.")
         # else: editing and left blank -> keep the instance's existing lat/lng untouched
 
         return cleaned_data
