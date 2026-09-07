@@ -259,17 +259,27 @@ def view_pickup(request, pk):
     
 @staff_required
 def list_order(request):
+    only_finished = request.GET.get("only_finished") == "on"
+
     pickups_qs = Pickup.objects.select_related("location").annotate(
         total_items=Sum("items__quantity")
-    ).filter(
-        status__in=[Pickup.STATUS_FINISHED, Pickup.STATUS_DELIVERED]
-    ).order_by("-invoice_id","-created_at")
+    )
+
+    if only_finished:
+        pickups_qs = pickups_qs.filter(status=Pickup.STATUS_FINISHED)
+    else:
+        pickups_qs = pickups_qs.filter(
+            status__in=[Pickup.STATUS_FINISHED, Pickup.STATUS_DELIVERED]
+        )
+
+    pickups_qs = pickups_qs.order_by("-invoice_id", "-created_at")
 
     paginator = Paginator(pickups_qs, 50)
     page_obj = paginator.get_page(request.GET.get("page"))
 
     return render(request, "locations/list_order.html", {
         "page_obj": page_obj,
+        "only_finished": only_finished,
     })
     
 @staff_required

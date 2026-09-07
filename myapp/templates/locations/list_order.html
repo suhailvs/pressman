@@ -17,6 +17,16 @@
 {% endblock %}
 
 {% block page_content %}
+  <div class="filter-bar">
+    <form method="get" id="filter-form">
+      <label class="filter-checkbox">
+        <input type="checkbox" name="only_finished" value="on"
+               {% if only_finished %}checked{% endif %}
+               onchange="this.form.submit()">
+        <span>Show only processing</span>
+      </label>
+    </form>
+  </div>
   <main class="chat-list has-bottom-nav" role="list">
   {% for pickup in page_obj %}
     <div class="chat-row"
@@ -50,23 +60,13 @@
             {% if pickup.total_items %}
               <span class="chat-row__item-count">{{ pickup.total_items }} pcs</span>
             {% endif %}
-            <span class="status-badge status-badge--{{ pickup.status }}">{{ pickup.get_status_display }}</span>
+            {% if pickup.get_status_display != "Finished" %}<span class="status-badge status-badge--{{ pickup.status }}">{{ pickup.get_status_display }}</span>{% endif %}
           </div>
         </div>
       </div>
 
       <div class="chat-row__quick-actions">
-        {% if pickup.status == 'processing' %}
-        <form method="post" action="{% url 'set_pickup_status' pickup.pk 'finished' %}" onclick="event.stopPropagation()">
-          {% csrf_token %}
-          <button type="submit" class="quick-btn quick-btn--finished" aria-label="Mark as finished" title="Mark as finished">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 6 9 17l-5-5"/>
-              <path d="M22 10 11 21l-3.5-3.5"/>
-            </svg>
-          </button>
-        </form>
-        {% elif pickup.status == 'finished' %}
+        {% if pickup.status == 'finished' %}
         <form method="post" action="{% url 'set_pickup_status' pickup.pk 'delivered' %}" onclick="event.stopPropagation()">
           {% csrf_token %}
           <button type="submit" class="quick-btn quick-btn--delivered" aria-label="Mark as delivered" title="Mark as delivered">
@@ -83,7 +83,7 @@
   {% empty %}
     <div class="chat-empty">
       <p class="chat-empty__title">No orders yet</p>
-      <p class="chat-empty__text">Pickups in processing, finished, or delivered will show up here.</p>
+      <p class="chat-empty__text">Pickups in processing or delivered will show up here.</p>
     </div>
   {% endfor %}
   </main>
@@ -91,7 +91,7 @@
   {% if page_obj.paginator.num_pages > 1 %}
   <nav class="pagination" aria-label="Order pages">
     {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}" class="pagination__btn">
+      <a href="?page={{ page_obj.previous_page_number }}{% if only_finished %}&only_finished=on{% endif %}" class="pagination__btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M15 18l-6-6 6-6"/>
         </svg>
@@ -122,6 +122,9 @@
 {% endblock %}
 
 {% block extra_css %}
+  .filter-bar{ display: flex; align-items: center; padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--wa-border); }
+  .filter-checkbox{ display: flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--wa-text); cursor: pointer; }
+  .filter-checkbox input[type="checkbox"]{ width: 17px; height: 17px; accent-color: var(--wa-green); cursor: pointer; }
 
   .pagination{ display: flex; align-items: center; justify-content: center; gap: 16px; padding: 14px 16px; background: #fff; border-top: 1px solid var(--wa-border); }
   .pagination__label{ font-size: 0.82rem; color: var(--wa-text-muted); font-weight: 600; }
