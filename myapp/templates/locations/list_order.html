@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load static %}
+{% load thumbnail %}
+
+{% block title %}Orders{% endblock %}
+
+{% block chat_header %}
+<header class="chat-header">
+  <a href="{% url 'list_pickup' %}" class="icon-btn" aria-label="Back">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+  </a>
+  <h1 class="chat-header__title">Orders <span class="count-badge">{{ page_obj.paginator.count }}</span></h1>
+</header>
+{% endblock %}
+
+{% block page_content %}
+  <main class="chat-list has-bottom-nav" role="list">
+  {% for pickup in page_obj %}
+    <div class="chat-row"
+        role="listitem"
+        tabindex="0"
+        onclick="window.location='{% url 'view_pickup' pickup.pk %}'"
+        onkeydown="if(event.key==='Enter'){window.location='{% url 'view_pickup' pickup.pk %}'}">
+
+      <div class="chat-row__avatar-wrap">
+        <div class="chat-row__invoice-id">
+          <span class="chat-row__invoice-hash"></span>{% if pickup.invoice_id %}#{{ pickup.invoice_id }}{% else %}-{% endif %}
+        </div>
+      </div>
+
+      <div class="chat-row__body">
+        <div class="chat-row__top">
+          <span class="chat-row__name">{{ pickup.location.name }}</span>
+          <span class="chat-row__time">
+            {% if pickup.status == 'delivered' and pickup.delivered_at %}
+              {{ pickup.delivered_at|date:"M j, g:i A" }}
+            {% else %}
+              {{ pickup.created_at|date:"M j, g:i A" }}
+            {% endif %}
+          </span>
+        </div>
+        <div class="chat-row__bottom">
+          <span class="chat-row__preview">
+            {{ pickup.note|default:"No notes added"|truncatechars:34 }}
+          </span>
+          <div class="chat-row__bottom-right">
+            {% if pickup.total_items %}
+              <span class="chat-row__item-count">{{ pickup.total_items }} pcs</span>
+            {% endif %}
+            <span class="status-badge status-badge--{{ pickup.status }}">{{ pickup.get_status_display }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-row__quick-actions">
+        {% if pickup.status == 'processing' %}
+        <form method="post" action="{% url 'set_pickup_status' pickup.pk 'finished' %}" onclick="event.stopPropagation()">
+          {% csrf_token %}
+          <button type="submit" class="quick-btn quick-btn--finished" aria-label="Mark as finished" title="Mark as finished">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6 9 17l-5-5"/>
+              <path d="M22 10 11 21l-3.5-3.5"/>
+            </svg>
+          </button>
+        </form>
+        {% elif pickup.status == 'finished' %}
+        <form method="post" action="{% url 'set_pickup_status' pickup.pk 'delivered' %}" onclick="event.stopPropagation()">
+          {% csrf_token %}
+          <button type="submit" class="quick-btn quick-btn--delivered" aria-label="Mark as delivered" title="Mark as delivered">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+              <path d="M3 6h18"/>
+              <path d="M16 10a4 4 0 0 1-8 0"/>
+            </svg>
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  {% empty %}
+    <div class="chat-empty">
+      <p class="chat-empty__title">No orders yet</p>
+      <p class="chat-empty__text">Pickups in processing, finished, or delivered will show up here.</p>
+    </div>
+  {% endfor %}
+  </main>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="pagination" aria-label="Order pages">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" class="pagination__btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </a>
+    {% else %}
+      <span class="pagination__btn pagination__btn--disabled">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </span>
+    {% endif %}
+    <span class="pagination__label">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" class="pagination__btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </a>
+    {% else %}
+      <span class="pagination__btn pagination__btn--disabled">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </span>
+    {% endif %}
+  </nav>
+  {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+
+  .pagination{ display: flex; align-items: center; justify-content: center; gap: 16px; padding: 14px 16px; background: #fff; border-top: 1px solid var(--wa-border); }
+  .pagination__label{ font-size: 0.82rem; color: var(--wa-text-muted); font-weight: 600; }
+  .pagination__btn{ width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--wa-bg); color: var(--wa-green); text-decoration: none; }
+  .pagination__btn:active{ background: var(--wa-border); }
+  .pagination__btn--disabled{ color: var(--wa-border); pointer-events: none; }
+
+  .chat-list{ flex: 1; overflow-y: auto; }
+  .chat-row{ display: flex; align-items: center; gap: 12px; padding: 10px 16px; text-decoration: none; color: inherit; border-bottom: 1px solid var(--wa-border); cursor: pointer; }
+  .chat-row:active{ background: var(--wa-bg); }
+  .chat-row__avatar-wrap{ position: relative; flex-shrink: 0; }
+  .chat-row__invoice-id{
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--wa-green), var(--wa-green-dark));
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    letter-spacing: -0.02em;
+  }
+  .chat-row__invoice-hash{
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0.8;
+    margin-right: 1px;
+  }
+  .chat-row__body{ flex: 1; min-width: 0; }
+  .chat-row__top{ display: flex; justify-content: space-between; align-items: baseline; }
+  .chat-row__name{ font-size: 1rem; font-weight: 600; color: var(--wa-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chat-row__time{ font-size: 0.72rem; color: var(--wa-text-muted); flex-shrink: 0; margin-left: 8px; }
+  .chat-row__bottom{ display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
+  .chat-row__preview{ font-size: 0.85rem; color: var(--wa-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chat-row__bottom-right{ display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: 8px; }
+  .chat-row__item-count{ font-size: 0.72rem; font-weight: 600; color: var(--wa-text-muted); white-space: nowrap; }
+  .chat-row__quick-actions{ display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; margin-left: 6px; }
+  .chat-row__quick-actions form{ margin: 0; }
+  .quick-btn{ width: 28px; height: 28px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; }
+  .quick-btn--finished{ background: #FFF4E0; color: #B8860B; }
+  .quick-btn--finished:active{ background: #FCE4B4; }
+  .quick-btn--delivered{ background: #E3F6EC; color: var(--wa-green-dark); }
+  .quick-btn--delivered:active{ background: #C8ECD9; }
+
+  .status-badge{ font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; padding: 3px 9px; border-radius: 12px; flex-shrink: 0; margin-left: 8px; }
+  .status-badge--picked_up{ background: #E3F2FD; color: #1565C0; }
+  .status-badge--finished{ background: #FFF4E0; color: #B8860B; }
+  .status-badge--delivered{ background: #E3F6EC; color: var(--wa-green-dark); }
+
+  .chat-empty{ text-align: center; padding: 60px 24px; color: var(--wa-text-muted); }
+  .chat-empty__title{ font-weight: 600; color: var(--wa-text); margin-bottom: 4px; }
+  .chat-empty__text{ font-size: 0.9rem; margin: 0; }
+{% endblock %}

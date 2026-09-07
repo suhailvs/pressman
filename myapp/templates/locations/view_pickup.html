@@ -2,9 +2,9 @@
 {% load static %}
 {% load thumbnail %}
 
-{% block title %}Pickup — {{ pickup.picked_up_at|date:"M j, Y"|default:"New" }}{% endblock %}
+{% block title %}Order — #{{ pickup.invoice_id }} {{ pickup.picked_up_at|date:"M j, Y"|default:"New" }}{% endblock %}
 
-{% block chat_header_title %}Pickup Info{% endblock %}
+{% block chat_header_title %}Order #{{ pickup.invoice_id }}{% endblock %}
 {% block page_content %}
   <div class="detail">
 
@@ -53,6 +53,14 @@
           </svg>
         </span>
         Map
+      </a>
+      <a href="{% url 'pickup_invoice' pickup.pk %}" class="detail__action">
+        <span class="detail__action-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+            <path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/>
+          </svg>
+        </span>
+        Invoice
       </a>
       <button type="button" class="detail__action" data-bs-toggle="modal" data-bs-target="#edit-pickup-modal">
         <span class="detail__action-icon">
@@ -140,7 +148,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            Add Items
+            New Invoice
           </a>
         </div>
       </div>

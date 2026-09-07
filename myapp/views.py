@@ -12,9 +12,12 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.contrib.auth import get_user_model
-from django.db.models import Sum, F, Count
+from django.db.models import Sum, F, Count, Max
 from django.urls import reverse
-from django.http import Http404,JsonResponse
+from django.http import Http404,JsonResponse, HttpResponse
+from django.template.loader import render_to_string
+from weasyprint import HTML
+
 from .forms import LocationForm,PickupForm,ExpenseForm
 from .models import Location, Pickup, PickupItem, Item, Employee, Attendance, Advance, Expense
 from .utils import get_project_activity, TRACKED_MODELS,staff_required, _date_group_label, _send_telegram, _telegram_enabled, _avatar_color
@@ -191,43 +194,30 @@ def location_map(request):
     locations = Location.objects.filter(is_active=True).exclude(latitude__isnull=True).exclude(longitude__isnull=True)
     return render(request, "locations/location_map.html", {"locations": locations})
 
+
+
 @staff_required
 def list_pickup(request):
     tab = request.GET.get("tab", "pending")
-    if tab not in ("pending", "finished", "delivered"):
+    if tab not in ("pending", "picked_up"):
         tab = "pending"
 
-    pickups_qs = Pickup.objects.select_related("location").exclude(
-        status=Pickup.STATUS_CANCELLED
-    ).annotate(total_items=Sum("items__quantity"))
-    if tab == "finished":
-        pickups_qs = pickups_qs.filter(status=Pickup.STATUS_FINISHED).order_by("-updated_at")
-    elif tab == "delivered":
-        pickups_qs = pickups_qs.filter(status=Pickup.STATUS_DELIVERED).order_by(
-            F("delivered_at").desc(nulls_last=True)
-        )
-    else:
-        pickups_qs = pickups_qs.exclude(
-            status__in=[Pickup.STATUS_FINISHED, Pickup.STATUS_DELIVERED]
-        ).order_by("-created_at")
-
-    paginator = Paginator(pickups_qs, 50)
-    page_obj = paginator.get_page(request.GET.get("page"))
+    pickups = Pickup.objects.select_related("location").filter(
+        status=tab
+    ).order_by("-created_at")
 
     today = timezone.localdate()
 
     def group_date(p):
-        dt = p.delivered_at if (tab == "delivered" and p.delivered_at) else p.created_at
-        return timezone.localtime(dt).date()
+        return timezone.localtime(p.created_at).date()
 
     grouped_pickups = [
-        {"label": _date_group_label(d, today), "days_ago": (today - d).days,"pickups": list(items)}
-        for d, items in groupby(page_obj.object_list, key=group_date)
+        {"label": _date_group_label(d, today), "days_ago": (today - d).days, "pickups": list(items)}
+        for d, items in groupby(pickups, key=group_date)
     ]
 
     return render(request, "locations/list_pickup.html", {
-        "pickups": page_obj,
-        "page_obj": page_obj,
+        "pickups": pickups,
         "current_tab": tab,
         "grouped_pickups": grouped_pickups,
     })
@@ -266,7 +256,22 @@ def view_pickup(request, pk):
         "pickup_items": pickup_items,
         "total_qty": total_qty,
     })
+    
+@staff_required
+def list_order(request):
+    pickups_qs = Pickup.objects.select_related("location").annotate(
+        total_items=Sum("items__quantity")
+    ).filter(
+        status__in=[Pickup.STATUS_FINISHED, Pickup.STATUS_DELIVERED]
+    ).order_by("-invoice_id","-created_at")
 
+    paginator = Paginator(pickups_qs, 50)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    return render(request, "locations/list_order.html", {
+        "page_obj": page_obj,
+    })
+    
 @staff_required
 def add_pickup_items_page(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
@@ -331,6 +336,14 @@ def add_pickup_items(request, pk):
             updated += 1
 
     if created or updated:
+        if pickup.invoice_id is None:
+            last_invoice = Pickup.objects.aggregate(m=Max("invoice_id"))["m"] or 0
+            pickup.invoice_id = last_invoice + 1
+            pickup.save(update_fields=["invoice_id"])
+            
+        if pickup.status != Pickup.STATUS_FINISHED:
+            pickup.status = Pickup.STATUS_FINISHED
+            pickup.save(update_fields=["status"])
         parts = []
         if created:
             parts.append(f"added {created} item{'s' if created != 1 else ''}")
@@ -343,7 +356,24 @@ def add_pickup_items(request, pk):
 
     return redirect("view_pickup", pk=pickup.pk)
  
- 
+@staff_required
+def pickup_invoice(request, pk):
+    pickup = get_object_or_404(Pickup, pk=pk)
+    pickup_items = pickup.items.select_related("item").all()
+
+    html_string = render_to_string("locations/invoice.html", {
+        "pickup": pickup,
+        "location": pickup.location,
+        "pickup_items": pickup_items,
+    })
+
+    pdf = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
+
+    response = HttpResponse(pdf, content_type="application/pdf")
+    filename = f"invoice_{pickup.invoice_id}.pdf"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
 @staff_required
 def remove_pickup_item(request, pk):
     pickup_item = get_object_or_404(PickupItem, pk=pk)

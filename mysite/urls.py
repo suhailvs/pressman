@@ -14,10 +14,11 @@ urlpatterns = [
     path("locations/<int:pk>/edit/", views.location_edit, name="location_edit"),
     path("locations/<int:pk>/balance/", views.update_location_balance, name="update_location_balance"),
     path("locations/map/", views.location_map, name="location_map"),
-    
+    path("orders/", views.list_order, name="list_order"),
     path("pickups/<int:pk>/", views.view_pickup, name="view_pickup"),
     path("pickups/", views.list_pickup, name="list_pickup"),
     path("pickups/<int:pk>/status/<str:status>/", views.set_pickup_status, name="set_pickup_status"),
+    path("pickup/<int:pk>/invoice/", views.pickup_invoice, name="pickup_invoice"),
     path("locations/<int:pk>/pickups/quick-add/", views.quick_add_pickup, name="quick_add_pickup"),
     path("pickups/<int:pk>/paid/", views.mark_pickup_paid, name="mark_pickup_paid"),
     path("pickups/<int:pk>/add-items/", views.add_pickup_items_page, name="add_pickup_items_page"),

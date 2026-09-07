@@ -3,3 +3,4 @@ django-simple-history
 Pillow
 requests
 sorl-thumbnail
+weasyprint==52.4

@@ -5,38 +5,15 @@
 {% block title %}All Pickups{% endblock %}
 
 
-{% block chat_header_title %}All Pickups <span class="count-badge">{{ page_obj.paginator.count }}</span>{% endblock %}
+{% block chat_header_title %}All Pickups <span class="count-badge">{{ pickups.count }}</span>{% endblock %}
 
 {% block page_content %}
-  <!-- Search (client-side, filters the list below) -->
-  <div class="chat-search">
-    <div class="chat-search__box">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      <input
-        type="search"
-        id="search-input"
-        class="chat-search__input"
-        placeholder="Search pickups"
-        autocomplete="off">
-      <a href="#" id="search-clear" class="chat-search__clear" aria-label="Clear search" style="display:none;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </a>
-    </div>
-  </div>
-
   <ul class="nav nav-underline pickup-tabs">
     <li class="nav-item">
-      <a class="nav-link {% if current_tab == 'pending' %}active{% endif %}" href="?tab=pending">Pickups</a>
+      <a class="nav-link {% if current_tab == 'pending' %}active{% endif %}" href="?tab=pending">Pending</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link {% if current_tab == 'finished' %}active{% endif %}" href="?tab=finished">Finished</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link {% if current_tab == 'delivered' %}active{% endif %}" href="?tab=delivered">Delivered</a>
+      <a class="nav-link {% if current_tab == 'picked_up' %}active{% endif %}" href="?tab=picked_up">Picked up</a>
     </li>
   </ul>
 
@@ -53,7 +30,6 @@
     <div class="chat-row"
          role="listitem"
          tabindex="0"
-         data-search="{{ pickup.location.name }} {{ pickup.picked_up_at|date:'M j, Y' }} {{ pickup.get_status_display }} {{ pickup.note|default:'' }}"
          onclick="window.location='{% url 'view_pickup' pickup.pk %}'"
          onkeydown="if(event.key==='Enter'){window.location='{% url 'view_pickup' pickup.pk %}'}">
 
@@ -85,11 +61,7 @@
         <div class="chat-row__top">
           <span class="chat-row__name">{{ pickup.location.name }}</span>
           <span class="chat-row__time">
-            {% if current_tab == 'delivered' and pickup.delivered_at %}
-              {{ pickup.delivered_at|date:"M j, g:i A" }}
-            {% else %}
-              {{ pickup.created_at|date:"M j, g:i A" }}
-            {% endif %}
+            {{ pickup.created_at|date:"M j, g:i A" }}
           </span>
         </div>
         <div class="chat-row__bottom">
@@ -97,9 +69,6 @@
             {{ pickup.note|default:"No notes added"|truncatechars:34 }}
           </span>
           <div class="chat-row__bottom-right">
-            {% if pickup.total_items %}
-              <span class="chat-row__item-count">{{ pickup.total_items }} pcs</span>
-            {% endif %}
             <span class="status-badge status-badge--{{ pickup.status }}">{{ pickup.get_status_display }}</span>
           </div>
         </div>
@@ -107,38 +76,11 @@
 
       {% if current_tab == 'pending' %}
       <div class="chat-row__quick-actions">
-        {% if pickup.status == 'pending' %}
         <form method="post" action="{% url 'set_pickup_status' pickup.pk 'picked_up' %}" onclick="event.stopPropagation()">
           {% csrf_token %}
           <button type="submit" class="quick-btn quick-btn--picked" aria-label="Mark as picked up" title="Mark as picked up">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20 6 9 17l-5-5"/>
-            </svg>
-          </button>
-        </form>
-        {% elif pickup.status == 'picked_up' %}
-        <form method="post" action="{% url 'set_pickup_status' pickup.pk 'finished' %}" onclick="event.stopPropagation()">
-          {% csrf_token %}
-          <button type="submit" class="quick-btn quick-btn--finished" aria-label="Mark as finished" title="Mark as finished">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 6 9 17l-5-5"/>
-              <path d="M22 10 11 21l-3.5-3.5"/>
-            </svg>
-          </button>
-        </form>
-        {% endif %}
-        </div>
-      {% endif %}
-
-      {% if current_tab == 'finished' %}
-      <div class="chat-row__quick-actions">
-        <form method="post" action="{% url 'set_pickup_status' pickup.pk 'delivered' %}" onclick="event.stopPropagation()">
-          {% csrf_token %}
-          <button type="submit" class="quick-btn quick-btn--delivered" aria-label="Mark as delivered" title="Mark as delivered">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-              <path d="M3 6h18"/>
-              <path d="M16 10a4 4 0 0 1-8 0"/>
             </svg>
           </button>
         </form>
@@ -148,80 +90,20 @@
     {% endfor %}
     {% empty %}
       <div class="chat-empty">
-        {% if current_tab == 'delivered' %}
-          <p class="chat-empty__title">No delivered pickups</p>
-          <p class="chat-empty__text">Pickups you mark as delivered will show up here.</p>
-        {% elif current_tab == 'finished' %}
-          <p class="chat-empty__title">No finished pickups</p>
-          <p class="chat-empty__text">Pickups you mark as finished will show up here.</p>
+        {% if current_tab == 'picked_up' %}
+          <p class="chat-empty__title">No picked up pickups</p>
+          <p class="chat-empty__text">Pickups you mark as picked up will show up here.</p>
         {% else %}
           <p class="chat-empty__title">No pending pickups</p>
-          <p class="chat-empty__text">Use the tabs above to see finished or delivered pickups.</p>
+          <p class="chat-empty__text">Use the tabs above to see picked up pickups.</p>
         {% endif %}
       </div>
     {% endfor %}
-
-    {% if pickups %}
-    <div class="chat-empty" id="no-results" style="display:none;">
-      <p class="chat-empty__title">No matches</p>
-      <p class="chat-empty__text">Try a different location, date, status, or note text.</p>
-    </div>
-    {% endif %}
   </main>
 
-  {% if page_obj.paginator.num_pages > 1 %}
-  <nav class="pagination" aria-label="Pickup pages">
-    {% if page_obj.has_previous %}
-      <a href="?tab={{ current_tab }}&page={{ page_obj.previous_page_number }}" class="pagination__btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 18l-6-6 6-6"/>
-        </svg>
-      </a>
-    {% else %}
-      <span class="pagination__btn pagination__btn--disabled">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 18l-6-6 6-6"/>
-        </svg>
-      </span>
-    {% endif %}
-
-    <span class="pagination__label">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-
-    {% if page_obj.has_next %}
-      <a href="?tab={{ current_tab }}&page={{ page_obj.next_page_number }}" class="pagination__btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 18l6-6-6-6"/>
-        </svg>
-      </a>
-    {% else %}
-      <span class="pagination__btn pagination__btn--disabled">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 18l6-6-6-6"/>
-        </svg>
-      </span>
-    {% endif %}
-  </nav>
-  {% endif %}
 {% endblock %}
 
 {% block extra_css %}
-  /* Search */
-  .chat-search{ padding: 10px 12px; background: #fff; border-bottom: 1px solid var(--wa-border); }
-  .chat-search__box{
-    display: flex; align-items: center; gap: 8px;
-    background: var(--wa-bg); border-radius: 20px;
-    padding: 8px 14px; color: var(--wa-text-muted);
-  }
-  .chat-search__input{
-    border: none; background: transparent; outline: none;
-    width: 100%; font-size: 0.9rem; color: var(--wa-text);
-  }
-  .chat-search__input::-webkit-search-cancel-button{ display: none; }
-  .chat-search__clear{
-    display: flex; align-items: center; justify-content: center;
-    color: var(--wa-text-muted); flex-shrink: 0;
-  }
-
   /* Tabs */
   .pickup-tabs{
     padding: 0 12px; background: #fff; border-bottom: 1px solid var(--wa-border);
@@ -245,20 +127,6 @@
     margin-left: 4px;
   }
   .date-divider__ago::before{ content: "· "; }
-
-  /* Pagination */
-  .pagination{
-    display: flex; align-items: center; justify-content: center; gap: 16px;
-    padding: 14px 16px; background: #fff; border-top: 1px solid var(--wa-border);
-  }
-  .pagination__label{ font-size: 0.82rem; color: var(--wa-text-muted); font-weight: 600; }
-  .pagination__btn{
-    width: 34px; height: 34px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--wa-bg); color: var(--wa-green); text-decoration: none;
-  }
-  .pagination__btn:active{ background: var(--wa-border); }
-  .pagination__btn--disabled{ color: var(--wa-border); pointer-events: none; }
 
   /* List */
   .chat-list{ flex: 1; overflow-y: auto; }
@@ -295,7 +163,7 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
 
-  /* Quick-action buttons: mark picked up / delivered without opening detail */
+  /* Quick-action buttons: mark picked up / finished without opening detail */
   .chat-row__quick-actions{
     display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; margin-left: 6px;
   }
@@ -333,40 +201,4 @@
   .chat-empty{ text-align: center; padding: 60px 24px; color: var(--wa-text-muted); }
   .chat-empty__title{ font-weight: 600; color: var(--wa-text); margin-bottom: 4px; }
   .chat-empty__text{ font-size: 0.9rem; margin: 0; }
-{% endblock %}
-
-{% block extra_js %}
-<script>
-  $(function () {
-    const $input = $("#search-input");
-    const $clearBtn = $("#search-clear");
-    const $noResults = $("#no-results");
-    const $rows = $(".chat-row");
-
-    function applyFilter() {
-      const value = $input.val().trim().toLowerCase();
-      $clearBtn.css("display", value ? "flex" : "none");
-
-      let visibleCount = 0;
-      $rows.each(function () {
-        const $row = $(this);
-        const haystack = ($row.data("search") || "").toString().toLowerCase();
-        const matches = !value || haystack.includes(value);
-        $row.css("display", matches ? "flex" : "none");
-        if (matches) visibleCount += 1;
-      });
-
-      $noResults.css("display", (value && visibleCount === 0) ? "block" : "none");
-    }
-
-    $input.on("input", applyFilter);
-
-    $clearBtn.on("click", function (e) {
-      e.preventDefault();
-      $input.val("").trigger("focus");
-      applyFilter();
-    });
-  });
-
-</script>
 {% endblock %}

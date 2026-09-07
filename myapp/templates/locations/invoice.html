@@ -1,0 +1,193 @@
+<!-- locations/templates/locations/invoice.html -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @page {
+    size: A4;
+    margin: 28px 32px;
+    @bottom-center {
+      content: "Thank you for your business";
+      font-size: 8pt;
+      color: #9AA5AB;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    color: #111B21;
+    font-size: 10.5pt;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 3px solid #128C7E;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+  }
+  .brand { font-size: 20pt; font-weight: 700; color: #075E54; margin: 0; }
+  .brand-sub { font-size: 8.5pt; color: #667781; margin-top: 2px; }
+  .invoice-meta { text-align: right; }
+  .invoice-meta h2 { margin: 0; font-size: 15pt; color: #111B21; }
+  .invoice-meta .num { color: #667781; font-size: 9pt; margin-top: 2px; }
+  .status-pill {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 8.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .status-pill.paid { background: #E3F6EC; color: #075E54; }
+  .status-pill.due { background: #FDEAEA; color: #D64545; }
+
+  .info-grid {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 26px;
+  }
+  .info-block h4 {
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #128C7E;
+    margin: 0 0 6px;
+  }
+  .info-block p { margin: 0; line-height: 1.5; }
+  .info-block .name { font-weight: 700; font-size: 11pt; }
+
+  table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+  thead th {
+    background: #075E54;
+    color: #fff;
+    text-align: left;
+    padding: 9px 10px;
+    font-size: 8.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  thead th.num { text-align: right; }
+  tbody td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #E9EDEF;
+  }
+  tbody td.num { text-align: right; }
+  tbody tr:nth-child(even) { background: #F7F8FA; }
+  .cat-tag {
+    font-size: 7.5pt;
+    color: #667781;
+    text-transform: uppercase;
+  }
+
+  .totals {
+    width: 260px;
+    margin-left: auto;
+    margin-top: 14px;
+  }
+  .totals-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 10px;
+    font-size: 10pt;
+  }
+  .totals-row.grand {
+    background: #128C7E;
+    color: #fff;
+    font-weight: 700;
+    font-size: 12pt;
+    border-radius: 6px;
+    margin-top: 6px;
+  }
+  .totals-row.paid { color: #075E54; }
+  .totals-row.balance { font-weight: 700; }
+
+  .footer-note {
+    margin-top: 30px;
+    font-size: 8.5pt;
+    color: #667781;
+    border-top: 1px solid #E9EDEF;
+    padding-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <div>
+      <p class="brand">Pressman</p>
+      <p class="brand-sub">Laundry &amp; Dry Cleaning Services</p>
+    </div>
+    <div class="invoice-meta">
+      <h2>INVOICE</h2>
+      <p class="num">#{{ pickup.invoice_id }}</p>
+      <p class="num">{{ pickup.created_at|date:"M j, Y" }}</p>
+      {% if pickup.is_paid %}
+        <span class="status-pill paid">Paid</span>
+      {% else %}
+        <span class="status-pill due">Unpaid</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-block">
+      <h4>Billed to</h4>
+      <p class="name">{{ location.name }}</p>
+      {% if location.house_name %}<p>{{ location.house_name }}</p>{% endif %}
+      {% if location.phone %}<p>{{ location.phone }}</p>{% endif %}
+    </div>
+    <div class="info-block" style="text-align:right;">
+      <h4>Pickup details</h4>
+      <p>Picked up: {{ pickup.picked_up_at|date:"M j, Y, g:i A"|default:"—" }}</p>
+      <p>Status: {{ pickup.get_status_display }}</p>
+      {% if pickup.is_paid %}
+        <p>{{ pickup.get_payment_method_display }} · {{ pickup.paid_at|date:"M j, Y" }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th class="num">Qty</th>
+        <th class="num">Price</th>
+        <th class="num">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for pi in pickup_items %}
+      <tr>
+        <td>{{ pi.item.name }} <span class="cat-tag">({{ pi.item.get_item_category_display }})</span></td>
+        <td class="num">{{ pi.quantity }}</td>
+        <td class="num">₹{{ pi.price }}</td>
+        <td class="num">₹{{ pi.total }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="text-align:center; color:#667781;">No items on this pickup.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div class="totals-row grand">
+      <span>Total</span>
+      <span>₹{{ pickup.items_total }}</span>
+    </div>
+    {% if pickup.is_paid %}
+    <div class="totals-row paid">
+      <span>Paid</span>
+      <span>₹{{ pickup.amount_paid }}</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <p class="footer-note">
+    Generated on {% now "M j, Y, g:i A" %}. This is a computer-generated invoice.
+  </p>
+
+</body>
+</html>
