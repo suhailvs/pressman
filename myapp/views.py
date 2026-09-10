@@ -16,6 +16,7 @@ from django.db.models import Sum, F, Count, Max
 from django.urls import reverse
 from django.http import Http404,JsonResponse, HttpResponse
 from django.template.loader import render_to_string
+from django.templatetags.static import static
 from weasyprint import HTML
 
 from .forms import LocationForm,PickupForm,ExpenseForm
@@ -368,6 +369,7 @@ def add_pickup_items(request, pk):
  
 @staff_required
 def pickup_invoice(request, pk):
+    
     pickup = get_object_or_404(Pickup, pk=pk)
     pickup_items = pickup.items.select_related("item").all()
 
@@ -375,6 +377,7 @@ def pickup_invoice(request, pk):
         "pickup": pickup,
         "location": pickup.location,
         "pickup_items": pickup_items,
+        "logo": request.build_absolute_uri(static('pressmen/img/logo.png')),
     })
 
     pdf = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
