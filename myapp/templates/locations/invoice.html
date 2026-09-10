@@ -1,4 +1,5 @@
 <!-- locations/templates/locations/invoice.html -->
+{% load static %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -6,132 +7,184 @@
 <style>
   @page {
     size: A4;
-    margin: 28px 32px;
+    margin: 30px 34px 44px;
     @bottom-center {
-      content: "Thank you for your business";
-      font-size: 8pt;
-      color: #9AA5AB;
+      content: "Thank you for choosing PressMen";
+      font-size: 7.5pt;
+      color: #9CA9AE;
+      letter-spacing: 0.02em;
     }
   }
   * { box-sizing: border-box; }
   body {
     font-family: 'Helvetica Neue', Arial, sans-serif;
-    color: #111B21;
+    color: #16232A;
     font-size: 10.5pt;
+    -weasy-hyphens: none;
   }
+
+  /* ---------- Header ---------- */
   .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    border-bottom: 3px solid #128C7E;
-    padding-bottom: 16px;
-    margin-bottom: 24px;
+    align-items: center;
+    padding-bottom: 18px;
+    margin-bottom: 6px;
   }
-  .brand { font-size: 20pt; font-weight: 700; color: #075E54; margin: 0; }
-  .brand-sub { font-size: 8.5pt; color: #667781; margin-top: 2px; }
-  .invoice-meta { text-align: right; }
-  .invoice-meta h2 { margin: 0; font-size: 15pt; color: #111B21; }
-  .invoice-meta .num { color: #667781; font-size: 9pt; margin-top: 2px; }
+  .brand-block { display: flex; align-items: center; }
+  .brand-block img { height: 58px; width: auto; margin: 0 14px 0 0; padding: 4px 8px 4px 0; }
+  .brand-name { font-size: 17pt; font-weight: 700; color: #0B4A40; letter-spacing: 0.01em; margin: 0 0 3px; padding: 2px 0; }
+  .brand-sub { font-size: 8pt; color: #6B7B80; }
+  .invoice-meta h3 {
+    margin: 0;
+    font-size: 12pt;
+    color: #0B4A40;
+    letter-spacing: 0.03em;
+  }
   .status-pill {
     display: inline-block;
-    margin-top: 8px;
-    padding: 3px 12px;
-    border-radius: 12px;
-    font-size: 8.5pt;
+    margin-top: 9px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 8pt;
     font-weight: 700;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
   }
-  .status-pill.paid { background: #E3F6EC; color: #075E54; }
-  .status-pill.due { background: #FDEAEA; color: #D64545; }
+  .status-pill.paid { background: #DDF3E8; color: #0B4A40; }
+  .status-pill.due  { background: #FCE7E7; color: #B23A3A; }
 
+  /* ---------- Info blocks ---------- */
   .info-grid {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 26px;
+    background: #F5F8F7;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 22px 0 26px;
   }
+  .info-block { max-width: 48%; }
   .info-block h4 {
-    font-size: 8pt;
+    font-size: 7.5pt;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: #128C7E;
-    margin: 0 0 6px;
+    letter-spacing: 0.07em;
+    color: #1E7D6E;
+    margin: 0 0 7px;
+    font-weight: 700;
   }
-  .info-block p { margin: 0; line-height: 1.5; }
-  .info-block .name { font-weight: 700; font-size: 11pt; }
+  .info-block p { margin: 0; line-height: 1.55; color: #33454B; }
+  .info-block .name { font-weight: 700; font-size: 11.5pt; color: #16232A; }
+  .info-block.right { text-align: right; }
 
+  /* ---------- Items table ---------- */
   table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
   thead th {
-    background: #075E54;
+    background: #0B4A40;
     color: #fff;
     text-align: left;
-    padding: 9px 10px;
-    font-size: 8.5pt;
+    padding: 10px 12px;
+    font-size: 8pt;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
   }
+  thead th:first-child { border-radius: 6px 0 0 6px; }
+  thead th:last-child { border-radius: 0 6px 6px 0; }
   thead th.num { text-align: right; }
+  th.sno, td.sno { width: 28px; max-width: 28px; text-align: center; }
   tbody td {
-    padding: 9px 10px;
-    border-bottom: 1px solid #E9EDEF;
+    padding: 10px 12px;
+    border-bottom: 1px solid #E7ECEA;
+    color: #26363C;
   }
-  tbody td.num { text-align: right; }
-  tbody tr:nth-child(even) { background: #F7F8FA; }
+  tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:nth-child(even) { background: #F7F9F8; }
+  tbody tr:last-child td { border-bottom: 2px solid #0B4A40; }
+  .item-name { font-weight: 600; }
   .cat-tag {
-    font-size: 7.5pt;
-    color: #667781;
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 7pt;
+    color: #6B7B80;
     text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
+  .empty-row td { text-align: center; color: #8B979B; padding: 22px; }
 
-  .totals {
-    width: 260px;
-    margin-left: auto;
-    margin-top: 14px;
-  }
+  /* ---------- Totals ---------- */
+  .totals-wrap { display: flex; justify-content: flex-end; margin-top: 16px; }
+  .totals { width: 260px; }
   .totals-row {
     display: flex;
     justify-content: space-between;
-    padding: 6px 10px;
+    padding: 7px 12px;
     font-size: 10pt;
+    color: #46565B;
+  }
+  .totals-row.subtotal { border-bottom: 1px solid #E7ECEA; }
+  .totals-row.paid { color: #1E7D6E; font-weight: 600; }
+  .totals-row.balance {
+    font-weight: 700;
+    color: #B23A3A;
+    border-top: 1px solid #E7ECEA;
   }
   .totals-row.grand {
-    background: #128C7E;
+    background: #0B4A40;
     color: #fff;
     font-weight: 700;
-    font-size: 12pt;
-    border-radius: 6px;
-    margin-top: 6px;
+    font-size: 12.5pt;
+    border-radius: 8px;
+    margin-top: 8px;
+    padding: 10px 14px;
   }
-  .totals-row.paid { color: #075E54; }
-  .totals-row.balance { font-weight: 700; }
 
+  /* ---------- Footer note ---------- */
   .footer-note {
-    margin-top: 30px;
+    margin-top: 34px;
     font-size: 8.5pt;
-    color: #667781;
-    border-top: 1px solid #E9EDEF;
-    padding-top: 10px;
+    color: #8B979B;
+    border-top: 1px solid #E7ECEA;
+    padding-top: 12px;
+  }
+  .footer-note .thanks {
+    color: #1E7D6E;
+    font-weight: 700;
+    font-size: 9pt;
+    margin-bottom: 4px;
+  }
+  .footer-note .contact {
+    color: #46565B;
+    margin-bottom: 6px;
   }
 </style>
 </head>
 <body>
 
   <div class="header">
-    <div>
-      <p class="brand">Pressman</p>
-      <p class="brand-sub">Laundry &amp; Dry Cleaning Services</p>
+    <div class="brand-block">
+      <img src="{% static 'pressmen/img/logo.png' %}" alt="PressMen">
+      <div>
+        <div class="brand-name">PRESSMEN LAUNDRY SERVICE</div>
+        <div class="brand-sub">Freshness You can Feel, Quality You can Trust.</div>
+      </div>
     </div>
-    <div class="invoice-meta">
-      <h2>INVOICE</h2>
-      <p class="num">#{{ pickup.invoice_id }}</p>
-      <p class="num">{{ pickup.created_at|date:"M j, Y" }}</p>
-      {% if pickup.is_paid %}
-        <span class="status-pill paid">Paid</span>
-      {% else %}
-        <span class="status-pill due">Unpaid</span>
-      {% endif %}
-    </div>
+    
   </div>
-
+  <div class="invoice-meta">
+    <table>
+      <tr>
+        <td><h3>Bill No: #{{ pickup.invoice_id }}</h3></td>
+        <td><h3>Date: {{ pickup.created_at|date:"d-m-Y" }}</h3></td>
+        <td>
+          <h3>
+          {% if pickup.is_paid %}
+            <span class="status-pill paid">Paid</span>
+          {% else %}
+            <span class="status-pill due">Unpaid</span>
+          {% endif %}
+          </h3>
+        </td>
+      </tr>
+    </table>
+  </div>
   <div class="info-grid">
     <div class="info-block">
       <h4>Billed to</h4>
@@ -139,7 +192,7 @@
       {% if location.house_name %}<p>{{ location.house_name }}</p>{% endif %}
       {% if location.phone %}<p>{{ location.phone }}</p>{% endif %}
     </div>
-    <div class="info-block" style="text-align:right;">
+    <div class="info-block right">
       <h4>Pickup details</h4>
       <p>Picked up: {{ pickup.picked_up_at|date:"M j, Y, g:i A"|default:"—" }}</p>
       <p>Status: {{ pickup.get_status_display }}</p>
@@ -152,8 +205,9 @@
   <table>
     <thead>
       <tr>
+        <th class="sno">#</th>
         <th>Item</th>
-        <th class="num">Qty</th>
+        <th class="num">Quantity</th>
         <th class="num">Price</th>
         <th class="num">Amount</th>
       </tr>
@@ -161,31 +215,45 @@
     <tbody>
       {% for pi in pickup_items %}
       <tr>
-        <td>{{ pi.item.name }} <span class="cat-tag">({{ pi.item.get_item_category_display }})</span></td>
+        <td class="sno">{{ forloop.counter }}.</td>
+        <td><span class="item-name">{{ pi.item.name }}</span><span class="cat-tag">{{ pi.item.get_item_category_display }}</span></td>
         <td class="num">{{ pi.quantity }}</td>
         <td class="num">₹{{ pi.price }}</td>
         <td class="num">₹{{ pi.total }}</td>
       </tr>
       {% empty %}
-      <tr><td colspan="4" style="text-align:center; color:#667781;">No items on this pickup.</td></tr>
+      <tr class="empty-row"><td colspan="5">No items on this pickup.</td></tr>
       {% endfor %}
     </tbody>
   </table>
 
-  <div class="totals">
-    <div class="totals-row grand">
-      <span>Total</span>
-      <span>₹{{ pickup.items_total }}</span>
+  <div class="totals-wrap">
+    <div class="totals">
+      <div class="totals-row subtotal">
+        <span>Subtotal</span>
+        <span>₹{{ pickup.items_total }}</span>
+      </div>
+      {% if pickup.is_paid %}
+      <div class="totals-row paid">
+        <span>Paid</span>
+        <span>₹{{ pickup.amount_paid }}</span>
+      </div>
+      {% else %}
+      <div class="totals-row balance">
+        <span>Balance due</span>
+        <span>₹{{ pickup.items_total }}</span>
+      </div>
+      {% endif %}
+      <div class="totals-row grand">
+        <span>Total</span>
+        <span>₹{{ pickup.items_total }}</span>
+      </div>
     </div>
-    {% if pickup.is_paid %}
-    <div class="totals-row paid">
-      <span>Paid</span>
-      <span>₹{{ pickup.amount_paid }}</span>
-    </div>
-    {% endif %}
   </div>
 
   <p class="footer-note">
+    <span class="thanks">Thank you for choosing PressMen!</span><br>
+    <span class="contact">Office: 9961962080 &nbsp;|&nbsp; Customer Care: 9995741187</span><br>
     Generated on {% now "M j, Y, g:i A" %}. This is a computer-generated invoice.
   </p>
 
