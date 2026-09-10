@@ -1,8 +1,12 @@
 import re
 import calendar
 from itertools import groupby
-from simple_history.utils import get_history_model_for_model
+
 from datetime import date,time
+from weasyprint import HTML
+from simple_history.utils import get_history_model_for_model
+
+from django.conf import settings
 from django.contrib.auth import update_session_auth_hash
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
@@ -17,7 +21,7 @@ from django.urls import reverse
 from django.http import Http404,JsonResponse, HttpResponse
 from django.template.loader import render_to_string
 from django.templatetags.static import static
-from weasyprint import HTML
+
 
 from .forms import LocationForm,PickupForm,ExpenseForm
 from .models import Location, Pickup, PickupItem, Item, Employee, Attendance, Advance, Expense
@@ -377,7 +381,7 @@ def pickup_invoice(request, pk):
         "pickup": pickup,
         "location": pickup.location,
         "pickup_items": pickup_items,
-        "logo": request.build_absolute_uri(static('pressmen/img/logo.png')),
+        "logo": (settings.BASE_DIR / "myapp" / "static" / "pressmen" / "img" / "logo.png").as_uri(), #request.build_absolute_uri(static('pressmen/img/logo.png')),
     })
 
     pdf = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
