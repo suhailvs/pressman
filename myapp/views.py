@@ -290,14 +290,17 @@ def list_order(request):
 @staff_required
 def add_pickup_items_page(request, pk):
     pickup = get_object_or_404(Pickup, pk=pk)
-    category = request.GET.get("category", "i")
-    if category not in ("d", "i"):
+    category = request.GET.get("category", pickup.item_category or "i")
+    if category not in dict(Item.CATEGORY_CHOICES):
         category = "i"
     context = {
         "pickup": pickup,
         "category": category,
+        "category_locked": pickup.item_category is not None,
         "dry_items": Item.objects.filter(item_category="d"),
         "iron_items": Item.objects.filter(item_category="i"),
+        "laundry_items": Item.objects.filter(item_category=Item.CATEGORY_LAUNDRY),
+        "chemical_wash_items": Item.objects.filter(item_category=Item.CATEGORY_CHEMICAL_WASH),
     }
     return render(request, "locations/add_pickup_items.html", context)
 
@@ -309,8 +312,16 @@ def add_pickup_items(request, pk):
     quantities = request.POST.getlist("quantity")
     prices = request.POST.getlist("price")
     category = request.POST.get("item_category")
-    if category not in (Item.CATEGORY_DRYCLEANING, Item.CATEGORY_IRONING):
+    if category not in dict(Item.CATEGORY_CHOICES):
         category = Item.CATEGORY_DRYCLEANING
+
+    if pickup.item_category and pickup.item_category != category:
+        messages.error(
+            request,
+            f"This pickup already has {dict(Item.CATEGORY_CHOICES)[pickup.item_category]} items. "
+            "Remove them first or start a new pickup for a different category.",
+        )
+        return redirect(f"{reverse('add_pickup_items', args=[pickup.pk])}?category={pickup.item_category}")
 
     created = 0
     updated = 0
@@ -351,6 +362,9 @@ def add_pickup_items(request, pk):
             updated += 1
 
     if created or updated:
+        if pickup.item_category is None:
+            pickup.item_category = category
+            pickup.save(update_fields=["item_category"])
         if pickup.invoice_id is None:
             last_invoice = Pickup.objects.aggregate(m=Max("invoice_id"))["m"] or 0
             pickup.invoice_id = last_invoice + 1
@@ -404,12 +418,12 @@ def create_item(request):
     pickup_pk = request.POST["pickup_pk"] # used to redirect back to the pickup detail page
     name = re.sub(r"\s+","_",request.POST["name"].strip().lower())
     category = request.POST["item_category"]
-    if Item.objects.filter( name=name, item_category=category).exists():
+    if Item.objects.filter(name=name, item_category=category).exists():
         messages.error(request, "Item already exists.")
-        return redirect("view_pickup", pk=pickup_pk)
+        return redirect("add_pickup_items_page", pk=pickup_pk)
     Item.objects.create(name=name,item_category=category,price=int(request.POST["price"]))
     messages.success(request, "Item created.")
-    return redirect("view_pickup", pk=pickup_pk)
+    return redirect("add_pickup_items_page", pk=pickup_pk)
 
 @staff_required
 def update_item_price(request, pk):

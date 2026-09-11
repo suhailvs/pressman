@@ -12,7 +12,7 @@
     </svg>
   </a>
   <h1 class="chat-header__title" id="add-items-title">
-    {% if category == "i" %}Add Ironing Items{% else %}Add Dry Cleaning Items{% endif %}
+    {% if category == "i" %}Add Ironing Items{% elif category == "l" %}Add Laundry Items{% elif category == "c" %}Add Chemical Wash Items{% else %}Add Dry Cleaning Items{% endif %}
   </h1>
 </header>
 {% endblock %}
@@ -22,11 +22,17 @@
 
   <div class="category-toggle" id="category-toggle">
     
-    <button type="button" class="category-toggle__opt {% if category == 'i' %}is-active{% endif %}" data-category="i" data-label="Ironing">
+    <button type="button" class="category-toggle__opt {% if category == 'i' %}is-active{% endif %}" data-category="i" data-label="Ironing" {% if category_locked and category != 'i' %}disabled{% endif %}>
       Ironing
     </button>
-    <button type="button" class="category-toggle__opt {% if category == 'd' %}is-active{% endif %}" data-category="d" data-label="Dry Cleaning">
+    <button type="button" class="category-toggle__opt {% if category == 'd' %}is-active{% endif %}" data-category="d" data-label="Dry Cleaning" {% if category_locked and category != 'd' %}disabled{% endif %}>
       Dry Cleaning
+    </button>
+    <button type="button" class="category-toggle__opt {% if category == 'l' %}is-active{% endif %}" data-category="l" data-label="Laundry" {% if category_locked and category != 'l' %}disabled{% endif %}>
+      Laundry
+    </button>
+    <button type="button" class="category-toggle__opt {% if category == 'c' %}is-active{% endif %}" data-category="c" data-label="Chemical Wash" {% if category_locked and category != 'c' %}disabled{% endif %}>
+      Chemical Wash
     </button>
   </div>
 
@@ -113,28 +119,17 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body wa-modal__body price-modal__body">
+        <ul class="nav nav-tabs price-modal__tabs" role="tablist">
+          <li class="nav-item" role="presentation"><button class="nav-link {% if category == 'i' or not category %}active{% endif %}" id="ironing-tab" data-bs-toggle="tab" data-bs-target="#ironing-prices" type="button" role="tab" aria-controls="ironing-prices" aria-selected="{% if category == 'i' or not category %}true{% else %}false{% endif %}">Ironing</button></li>
+          <li class="nav-item" role="presentation"><button class="nav-link {% if category == 'd' %}active{% endif %}" id="dry-cleaning-tab" data-bs-toggle="tab" data-bs-target="#dry-cleaning-prices" type="button" role="tab" aria-controls="dry-cleaning-prices" aria-selected="{% if category == 'd' %}true{% else %}false{% endif %}">Dry Cleaning</button></li>
+          <li class="nav-item" role="presentation"><button class="nav-link {% if category == 'l' %}active{% endif %}" id="laundry-tab" data-bs-toggle="tab" data-bs-target="#laundry-prices" type="button" role="tab" aria-controls="laundry-prices" aria-selected="{% if category == 'l' %}true{% else %}false{% endif %}">Laundry</button></li>
+          <li class="nav-item" role="presentation"><button class="nav-link {% if category == 'c' %}active{% endif %}" id="chemical-wash-tab" data-bs-toggle="tab" data-bs-target="#chemical-wash-prices" type="button" role="tab" aria-controls="chemical-wash-prices" aria-selected="{% if category == 'c' %}true{% else %}false{% endif %}">Chemical Wash</button></li>
+        </ul>
+        <div class="tab-content price-modal__tab-content">
+          
 
+          <div class="tab-pane fade {% if category == 'i' or not category %}show active{% endif %}" id="ironing-prices" role="tabpanel" aria-labelledby="ironing-tab" tabindex="0">
         <div class="price-modal__group">
-          <div class="price-modal__group-label">Dry Cleaning</div>
-          {% for catalog_item in dry_items %}
-          <div class="price-row" data-item-id="{{ catalog_item.pk }}" data-category="d" data-name="{{ catalog_item.name|escapejs }}">
-            <span class="price-row__name">{{ catalog_item.name }}</span>
-            <span class="price-row__currency">₹</span>
-            <input type="number" min="0" step="1" class="price-row__input" value="{{ catalog_item.price }}" inputmode="numeric">
-            <button type="button" class="price-row__save" aria-label="Save price for {{ catalog_item.name }}">
-              <svg class="price-row__save-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-              <span class="price-row__spinner" aria-hidden="true"></span>
-            </button>
-          </div>
-          {% empty %}
-          <p class="price-modal__empty">No dry cleaning items yet.</p>
-          {% endfor %}
-        </div>
-
-        <div class="price-modal__group">
-          <div class="price-modal__group-label">Ironing</div>
           {% for catalog_item in iron_items %}
           <div class="price-row" data-item-id="{{ catalog_item.pk }}" data-category="i" data-name="{{ catalog_item.name|escapejs }}">
             <span class="price-row__name">{{ catalog_item.name }}</span>
@@ -151,6 +146,60 @@
           <p class="price-modal__empty">No ironing items yet.</p>
           {% endfor %}
         </div>
+          </div>
+
+          <div class="tab-pane fade {% if category == 'd' %}show active{% endif %}" id="dry-cleaning-prices" role="tabpanel" aria-labelledby="dry-cleaning-tab" tabindex="0">
+        <div class="price-modal__group">
+          {% for catalog_item in dry_items %}
+          <div class="price-row" data-item-id="{{ catalog_item.pk }}" data-category="d" data-name="{{ catalog_item.name|escapejs }}">
+            <span class="price-row__name">{{ catalog_item.name }}</span>
+            <span class="price-row__currency">₹</span>
+            <input type="number" min="0" step="1" class="price-row__input" value="{{ catalog_item.price }}" inputmode="numeric">
+            <button type="button" class="price-row__save" aria-label="Save price for {{ catalog_item.name }}">
+              <svg class="price-row__save-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              <span class="price-row__spinner" aria-hidden="true"></span>
+            </button>
+          </div>
+          {% empty %}
+          <p class="price-modal__empty">No dry cleaning items yet.</p>
+          {% endfor %}
+        </div>
+          </div>
+
+          <div class="tab-pane fade {% if category == 'l' %}show active{% endif %}" id="laundry-prices" role="tabpanel" aria-labelledby="laundry-tab" tabindex="0">
+        <div class="price-modal__group">
+          {% for catalog_item in laundry_items %}
+          <div class="price-row" data-item-id="{{ catalog_item.pk }}" data-category="l" data-name="{{ catalog_item.name|escapejs }}">
+            <span class="price-row__name">{{ catalog_item.name }}</span>
+            <span class="price-row__currency">₹</span>
+            <input type="number" min="0" step="1" class="price-row__input" value="{{ catalog_item.price }}" inputmode="numeric">
+            <button type="button" class="price-row__save" aria-label="Save price for {{ catalog_item.name }}">
+              <svg class="price-row__save-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="price-row__spinner" aria-hidden="true"></span>
+            </button>
+          </div>
+          {% empty %}<p class="price-modal__empty">No laundry items yet.</p>{% endfor %}
+        </div>
+          </div>
+
+          <div class="tab-pane fade {% if category == 'c' %}show active{% endif %}" id="chemical-wash-prices" role="tabpanel" aria-labelledby="chemical-wash-tab" tabindex="0">
+        <div class="price-modal__group">
+          {% for catalog_item in chemical_wash_items %}
+          <div class="price-row" data-item-id="{{ catalog_item.pk }}" data-category="c" data-name="{{ catalog_item.name|escapejs }}">
+            <span class="price-row__name">{{ catalog_item.name }}</span>
+            <span class="price-row__currency">₹</span>
+            <input type="number" min="0" step="1" class="price-row__input" value="{{ catalog_item.price }}" inputmode="numeric">
+            <button type="button" class="price-row__save" aria-label="Save price for {{ catalog_item.name }}">
+              <svg class="price-row__save-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <span class="price-row__spinner" aria-hidden="true"></span>
+            </button>
+          </div>
+          {% empty %}<p class="price-modal__empty">No chemical wash items yet.</p>{% endfor %}
+        </div>
+          </div>
+        </div>
 
       </div>
       <div class="modal-footer wa-modal__footer">
@@ -166,11 +215,12 @@
 
   .category-toggle{ display: flex; gap: 6px; margin-bottom: 16px; }
   .category-toggle__opt{
-    flex: 1; padding: 7px; border: 1.5px solid var(--wa-border); border-radius: 8px;
+    flex: 1; min-width: 0; padding: 7px; border: 1.5px solid var(--wa-border); border-radius: 8px;
     background: #fff; font-size: 0.8rem; font-weight: 600; color: var(--wa-text-muted);
   }
   .category-toggle__opt.is-active{ border-color: var(--wa-green); color: var(--wa-green); background: #E3F6EC; }
   .category-toggle__opt:active{ opacity: 0.8; }
+  .category-toggle__opt:disabled{ opacity: 0.4; pointer-events: none; }
 
   #item-rows{ display: flex; flex-direction: column; gap: 0px; margin-bottom: 14px; }
   .item-input-row{ display: flex; align-items: center; gap: 8px; }
@@ -211,12 +261,10 @@
 
   /* Item Prices modal */
   .price-modal__body{ padding-top: 8px; }
-  .price-modal__group{ margin-bottom: 18px; }
-  .price-modal__group:last-child{ margin-bottom: 0; }
-  .price-modal__group-label{
-    font-size: 0.72rem; font-weight: 700; color: var(--wa-green);
-    text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;
-  }
+  .price-modal__tabs{ flex-wrap: nowrap; overflow-x: auto; margin: 0 -20px 12px; padding: 0 20px; }
+  .price-modal__tabs .nav-link{ white-space: nowrap; color: var(--wa-text-muted); font-size: 0.8rem; font-weight: 600; }
+  .price-modal__tabs .nav-link.active{ color: var(--wa-green-dark); border-color: var(--wa-border) var(--wa-border) #fff; }
+  .price-modal__group{ margin: 0; }
   .price-modal__empty{ font-size: 0.85rem; color: var(--wa-text-muted); margin: 0; }
 
   .price-row{
@@ -279,6 +327,16 @@
       },
       i: {
         {% for catalog_item in iron_items %}
+          "{{ catalog_item.name|escapejs }}": {{ catalog_item.price }},
+        {% endfor %}
+      },
+      l: {
+        {% for catalog_item in laundry_items %}
+          "{{ catalog_item.name|escapejs }}": {{ catalog_item.price }},
+        {% endfor %}
+      },
+      c: {
+        {% for catalog_item in chemical_wash_items %}
           "{{ catalog_item.name|escapejs }}": {{ catalog_item.price }},
         {% endfor %}
       },
@@ -428,6 +486,12 @@
     // --- Item Prices modal: inline AJAX price editing ---
     const pricesModal = document.getElementById("item-prices-modal");
 
+    const priceTabIdByCategory = {
+      d: "dry-cleaning-tab",
+      i: "ironing-tab",
+      l: "laundry-tab",
+      c: "chemical-wash-tab",
+    };
     function markInputDirty(input) { input.classList.add("is-dirty"); }
     function markInputClean(input) { input.classList.remove("is-dirty"); }
 
@@ -480,6 +544,12 @@
     }
 
     if (pricesModal) {
+      pricesModal.addEventListener("show.bs.modal", function () {
+        const targetTabBtn = document.getElementById(priceTabIdByCategory[categoryInput.value] || "dry-cleaning-tab");
+        if (targetTabBtn && !targetTabBtn.classList.contains("active")) {
+          bootstrap.Tab.getOrCreateInstance(targetTabBtn).show();
+        }
+      });
       pricesModal.addEventListener("hidden.bs.modal", function () {
         window.location.reload();
       });

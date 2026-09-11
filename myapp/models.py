@@ -31,6 +31,29 @@ class Location(models.Model):
     def __str__(self):
         return self.name
 
+class Item(models.Model):
+    CATEGORY_DRYCLEANING = "d"
+    CATEGORY_IRONING = "i"
+    CATEGORY_LAUNDRY = "l"
+    CATEGORY_CHEMICAL_WASH = "c"
+    CATEGORY_CHOICES = [
+        (CATEGORY_DRYCLEANING, "Drycleaning"),
+        (CATEGORY_IRONING, "Ironing"),
+        (CATEGORY_LAUNDRY, "Laundry"),
+        (CATEGORY_CHEMICAL_WASH, "Chemical Wash"),
+    ]
+
+    name = models.CharField(max_length=255)
+    item_category = models.CharField(max_length=1, choices=CATEGORY_CHOICES, default=CATEGORY_DRYCLEANING)
+    price = models.IntegerField(default=0)
+    history = HistoricalRecords()
+    class Meta:
+        ordering = ["name", "item_category"]
+        unique_together = ("name", "item_category")
+
+    def __str__(self):
+        return f"{self.name} ({self.get_item_category_display()})"
+ 
 class Pickup(models.Model):
     STATUS_PENDING = "pending"
     STATUS_PICKED_UP = "picked_up"
@@ -63,6 +86,9 @@ class Pickup(models.Model):
     payment_method = models.CharField(max_length=10, choices=PAYMENT_CHOICES, blank=True, null=True)
     amount_paid = models.IntegerField(blank=True, null=True)
     paid_at = models.DateTimeField(blank=True, null=True)
+    item_category = models.CharField(
+        max_length=1, choices=Item.CATEGORY_CHOICES, blank=True, null=True
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -77,27 +103,6 @@ class Pickup(models.Model):
     @property
     def is_paid(self):
         return self.paid_at is not None
- 
-
-class Item(models.Model):
-    CATEGORY_DRYCLEANING = "d"
-    CATEGORY_IRONING = "i"
-    CATEGORY_CHOICES = [
-        (CATEGORY_DRYCLEANING, "Drycleaning"),
-        (CATEGORY_IRONING, "Ironing"),
-    ]
-
-    name = models.CharField(max_length=255)
-    item_category = models.CharField(max_length=1, choices=CATEGORY_CHOICES, default=CATEGORY_DRYCLEANING)
-    price = models.IntegerField(default=0)
-    history = HistoricalRecords()
-    class Meta:
-        ordering = ["name", "item_category"]
-        unique_together = ("name", "item_category")
-
-    def __str__(self):
-        return f"{self.name} ({self.get_item_category_display()})"
- 
  
 class PickupItem(models.Model):
     pickup = models.ForeignKey(Pickup, on_delete=models.CASCADE, related_name="items")
@@ -195,4 +200,3 @@ class Attendance(models.Model):
         unique_together = ('employee', 'date')
     def __str__(self):
         return f"{self.employee.user.get_full_name()} - {self.date} ({self.day_type})"
-

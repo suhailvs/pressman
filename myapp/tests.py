@@ -506,6 +506,20 @@ class AddPickupItemsViewTests(AuthenticatedViewTestCase):
         item = Item.objects.get(name="mystery item")
         self.assertEqual(item.item_category, Item.CATEGORY_DRYCLEANING)
 
+    def test_creates_laundry_and_chemical_wash_items(self):
+        for category in (Item.CATEGORY_LAUNDRY, Item.CATEGORY_CHEMICAL_WASH):
+            response = self.client.post(
+                reverse("add_pickup_items", args=[self.pickup.pk]),
+                data={
+                    "item_name": [f"Item {category}"],
+                    "item_category": [category],
+                    "quantity": ["1"],
+                    "price": ["10"],
+                },
+            )
+            self.assertRedirects(response, reverse("view_pickup", args=[self.pickup.pk]))
+            self.assertTrue(Item.objects.filter(name=f"item {category}", item_category=category).exists())
+
     def test_no_items_entered_shows_error_message(self):
         response = self.client.post(
             reverse("add_pickup_items", args=[self.pickup.pk]),
