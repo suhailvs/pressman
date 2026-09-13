@@ -264,17 +264,27 @@ def view_pickup(request, pk):
     
 @staff_required
 def list_order(request):
-    only_finished = request.GET.get("only_finished") == "on"
+    current_tab = request.GET.get("tab", "all")
+    if current_tab not in ("all", "processing", "finished", "delivered"):
+        current_tab = "all"
 
     pickups_qs = Pickup.objects.select_related("location").annotate(
         total_items=Sum("items__quantity")
     )
 
-    if only_finished:
+    if current_tab == "processing":
+        pickups_qs = pickups_qs.filter(status=Pickup.STATUS_PROCESSING)
+    elif current_tab == "finished":
         pickups_qs = pickups_qs.filter(status=Pickup.STATUS_FINISHED)
+    elif current_tab == "delivered":
+        pickups_qs = pickups_qs.filter(status=Pickup.STATUS_DELIVERED)
     else:
         pickups_qs = pickups_qs.filter(
-            status__in=[Pickup.STATUS_FINISHED, Pickup.STATUS_DELIVERED]
+            status__in=[
+                Pickup.STATUS_PROCESSING,
+                Pickup.STATUS_FINISHED,
+                Pickup.STATUS_DELIVERED,
+            ]
         )
 
     pickups_qs = pickups_qs.order_by("-invoice_id", "-created_at")
@@ -284,7 +294,7 @@ def list_order(request):
 
     return render(request, "locations/list_order.html", {
         "page_obj": page_obj,
-        "only_finished": only_finished,
+        "current_tab": current_tab,
     })
     
 @staff_required
@@ -370,8 +380,8 @@ def add_pickup_items(request, pk):
             pickup.invoice_id = last_invoice + 1
             pickup.save(update_fields=["invoice_id"])
             
-        if pickup.status != Pickup.STATUS_FINISHED:
-            pickup.status = Pickup.STATUS_FINISHED
+        if pickup.status != Pickup.STATUS_PROCESSING:
+            pickup.status = Pickup.STATUS_PROCESSING
             pickup.save(update_fields=["status"])
         parts = []
         if created:

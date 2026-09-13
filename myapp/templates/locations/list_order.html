@@ -17,16 +17,21 @@
 {% endblock %}
 
 {% block page_content %}
-  <div class="filter-bar">
-    <form method="get" id="filter-form">
-      <label class="filter-checkbox">
-        <input type="checkbox" name="only_finished" value="on"
-               {% if only_finished %}checked{% endif %}
-               onchange="this.form.submit()">
-        <span>Show only processing</span>
-      </label>
-    </form>
-  </div>
+  <ul class="nav nav-underline pickup-tabs">
+    <li class="nav-item">
+      <a class="nav-link {% if current_tab == 'all' %}active{% endif %}" href="?tab=all">All</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if current_tab == 'processing' %}active{% endif %}" href="?tab=processing">Processing</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if current_tab == 'finished' %}active{% endif %}" href="?tab=finished">Finished</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if current_tab == 'delivered' %}active{% endif %}" href="?tab=delivered">Delivered</a>
+    </li>
+  </ul>
+
   <main class="chat-list has-bottom-nav" role="list">
   {% for pickup in page_obj %}
     <div class="chat-row"
@@ -82,8 +87,19 @@
     </div>
   {% empty %}
     <div class="chat-empty">
-      <p class="chat-empty__title">No orders yet</p>
-      <p class="chat-empty__text">Pickups in processing or delivered will show up here.</p>
+      {% if current_tab == 'processing' %}
+        <p class="chat-empty__title">No processing orders</p>
+        <p class="chat-empty__text">Orders being processed will show up here.</p>
+      {% elif current_tab == 'finished' %}
+        <p class="chat-empty__title">No finished orders</p>
+        <p class="chat-empty__text">Orders marked as finished will show up here.</p>
+      {% elif current_tab == 'delivered' %}
+        <p class="chat-empty__title">No delivered orders</p>
+        <p class="chat-empty__text">Orders marked as delivered will show up here.</p>
+      {% else %}
+        <p class="chat-empty__title">No orders yet</p>
+        <p class="chat-empty__text">Pickups in processing or delivered will show up here.</p>
+      {% endif %}
     </div>
   {% endfor %}
   </main>
@@ -91,7 +107,7 @@
   {% if page_obj.paginator.num_pages > 1 %}
   <nav class="pagination" aria-label="Order pages">
     {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}{% if only_finished %}&only_finished=on{% endif %}" class="pagination__btn">
+      <a href="?page={{ page_obj.previous_page_number }}&tab={{ current_tab }}" class="pagination__btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M15 18l-6-6 6-6"/>
         </svg>
@@ -105,7 +121,7 @@
     {% endif %}
     <span class="pagination__label">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
     {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}" class="pagination__btn">
+      <a href="?page={{ page_obj.next_page_number }}&tab={{ current_tab }}" class="pagination__btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 18l6-6-6-6"/>
         </svg>
@@ -122,9 +138,10 @@
 {% endblock %}
 
 {% block extra_css %}
-  .filter-bar{ display: flex; align-items: center; padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--wa-border); }
-  .filter-checkbox{ display: flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--wa-text); cursor: pointer; }
-  .filter-checkbox input[type="checkbox"]{ width: 17px; height: 17px; accent-color: var(--wa-green); cursor: pointer; }
+  /* Tabs (shared look with pickup list) */
+  .pickup-tabs{ padding: 0 12px; background: #fff; border-bottom: 1px solid var(--wa-border); }
+  .pickup-tabs .nav-link{ color: var(--wa-text-muted); font-weight: 600; font-size: 0.88rem; padding: 10px 12px; }
+  .pickup-tabs .nav-link.active{ color: var(--wa-green); }
 
   .pagination{ display: flex; align-items: center; justify-content: center; gap: 16px; padding: 14px 16px; background: #fff; border-top: 1px solid var(--wa-border); }
   .pagination__label{ font-size: 0.82rem; color: var(--wa-text-muted); font-weight: 600; }
@@ -175,6 +192,7 @@
 
   .status-badge{ font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; padding: 3px 9px; border-radius: 12px; flex-shrink: 0; margin-left: 8px; }
   .status-badge--picked_up{ background: #E3F2FD; color: #1565C0; }
+  .status-badge--processing{ background: #EDE7F6; color: #5E35B1; }
   .status-badge--finished{ background: #FFF4E0; color: #B8860B; }
   .status-badge--delivered{ background: #E3F6EC; color: var(--wa-green-dark); }
 
