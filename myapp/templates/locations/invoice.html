@@ -172,8 +172,8 @@
     <table>
       <tr>
         <td><h3>Bill No: #{{ pickup.invoice_id }}</h3></td>
-        <td><h3>Date: {{ pickup.created_at|date:"d-m-Y" }}</h3></td>
-        <td>
+        <td style="text-align: center;"><h3>Category: {{ pickup.get_item_category_display|default:"—" }}</h3></td>
+        <!-- <td>
           <h3>
           {% if pickup.is_paid %}
             <span class="status-pill paid">Paid</span>
@@ -181,7 +181,8 @@
             <span class="status-pill due">Unpaid</span>
           {% endif %}
           </h3>
-        </td>
+        </td> -->
+        <td style="text-align: right;"><h3>Date: {{ pickup.created_at|date:"d-m-Y" }}</h3></td>
       </tr>
     </table>
   </div>
@@ -195,7 +196,7 @@
     <div class="info-block right">
       <h4>Pickup details</h4>
       <p>Picked up: {{ pickup.picked_up_at|date:"M j, Y, g:i A"|default:"—" }}</p>
-      <p>Status: {{ pickup.get_status_display }}</p>
+      <p>Status: {{ pickup.get_status_display }}</p>      
       {% if pickup.is_paid %}
         <p>{{ pickup.get_payment_method_display }} · {{ pickup.paid_at|date:"M j, Y" }}</p>
       {% endif %}
@@ -216,7 +217,7 @@
       {% for pi in pickup_items %}
       <tr>
         <td class="sno">{{ forloop.counter }}.</td>
-        <td><span class="item-name">{{ pi.item.name }}</span><span class="cat-tag">{{ pi.item.get_item_category_display }}</span></td>
+        <td><span class="item-name">{{ pi.item.name }}</span></td>
         <td class="num">{{ pi.quantity }}</td>
         <td class="num">₹{{ pi.price }}</td>
         <td class="num">₹{{ pi.total }}</td>
