@@ -18,6 +18,7 @@ urlpatterns = [
     path("pickups/<int:pk>/", views.view_pickup, name="view_pickup"),
     path("pickups/", views.list_pickup, name="list_pickup"),
     path("pickups/<int:pk>/status/<str:status>/", views.set_pickup_status, name="set_pickup_status"),
+    path('pickup/<int:pk>/finish/', views.mark_pickup_finished, name='mark_pickup_finished'),
     path("pickup/<int:pk>/invoice/", views.pickup_invoice, name="pickup_invoice"),
     path("locations/<int:pk>/pickups/quick-add/", views.quick_add_pickup, name="quick_add_pickup"),
     path("pickups/<int:pk>/paid/", views.mark_pickup_paid, name="mark_pickup_paid"),

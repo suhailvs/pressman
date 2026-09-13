@@ -1,0 +1,61 @@
+<div class="chat-row"
+    role="listitem"
+    tabindex="0"
+    onclick="window.location='{% url 'view_pickup' pickup.pk %}'"
+    onkeydown="if(event.key==='Enter'){window.location='{% url 'view_pickup' pickup.pk %}'}">
+
+  <div class="chat-row__avatar-wrap">
+    <div class="chat-row__invoice-id">
+      <span class="chat-row__invoice-hash"></span>{% if pickup.invoice_id %}#{{ pickup.invoice_id }}{% else %}-{% endif %}
+    </div>
+  </div>
+
+  <div class="chat-row__body">
+    <div class="chat-row__top">
+      <span class="chat-row__name">{{ pickup.location.name }}</span>
+      <span class="chat-row__time">
+        {% if pickup.status == 'delivered' and pickup.delivered_at %}
+          {{ pickup.delivered_at|date:"M j, g:i A" }}
+        {% else %}
+          {{ pickup.created_at|date:"M j, g:i A" }}
+        {% endif %}
+      </span>
+    </div>
+    <div class="chat-row__bottom">
+      <span class="chat-row__preview">
+        {{ pickup.note|default:"No notes added"|truncatechars:34 }}
+      </span>
+      <div class="chat-row__bottom-right">
+        {% if pickup.total_items %}
+          <span class="chat-row__item-count">{{ pickup.total_items }} pcs</span>
+        {% endif %}
+        <span class="status-badge status-badge--{{ pickup.status }}">{{ pickup.get_status_display }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-row__quick-actions">
+    {% if pickup.status == 'processing' %}
+    <form method="post" action="{% url 'set_pickup_status' pickup.pk 'finished' %}" onclick="event.stopPropagation()">
+      {% csrf_token %}
+      <button type="submit" class="quick-btn quick-btn--finished" aria-label="Mark as finished" title="Mark as finished">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6 7 17l-5-5"/>
+          <path d="M22 10 11 21l-4-4"/>
+        </svg>
+      </button>
+    </form>
+    {% elif pickup.status == 'finished' %}
+    <form method="post" action="{% url 'set_pickup_status' pickup.pk 'delivered' %}" onclick="event.stopPropagation()">
+      {% csrf_token %}
+      <button type="submit" class="quick-btn quick-btn--delivered" aria-label="Mark as delivered" title="Mark as delivered">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+          <path d="M3 6h18"/>
+          <path d="M16 10a4 4 0 0 1-8 0"/>
+        </svg>
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>

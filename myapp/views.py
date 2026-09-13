@@ -1,6 +1,6 @@
 import re
 import calendar
-from itertools import groupby
+
 
 from datetime import date,time
 from weasyprint import HTML
@@ -11,8 +11,8 @@ from django.contrib.auth import update_session_auth_hash
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
-from django.contrib.auth.views import LoginView
 from django.utils import timezone
+from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.contrib.auth import get_user_model
@@ -22,11 +22,11 @@ from django.http import Http404,JsonResponse, HttpResponse
 from django.template.loader import render_to_string
 from django.templatetags.static import static
 
-
 from .forms import LocationForm,PickupForm,ExpenseForm
 from .models import Location, Pickup, PickupItem, Item, Employee, Attendance, Advance, Expense
-from .utils import get_project_activity, TRACKED_MODELS,staff_required, _date_group_label, _send_telegram, _telegram_enabled, _avatar_color
-from .utils import get_tracked_model_by_name, get_display_label
+from .utils import (get_project_activity, TRACKED_MODELS,staff_required, _send_telegram, 
+    _telegram_enabled, _group_by_date,_group_pickups_by_date, _avatar_color, get_tracked_model_by_name, get_display_label)
+
 User = get_user_model()
 
 def custom_logout(request):
@@ -200,7 +200,6 @@ def location_map(request):
     return render(request, "locations/location_map.html", {"locations": locations})
 
 
-
 @staff_required
 def list_pickup(request):
     tab = request.GET.get("tab", "pending")
@@ -211,15 +210,7 @@ def list_pickup(request):
         status=tab
     ).order_by("-created_at")
 
-    today = timezone.localdate()
-
-    def group_date(p):
-        return timezone.localtime(p.created_at).date()
-
-    grouped_pickups = [
-        {"label": _date_group_label(d, today), "days_ago": (today - d).days, "pickups": list(items)}
-        for d, items in groupby(pickups, key=group_date)
-    ]
+    grouped_pickups = _group_pickups_by_date(pickups)
 
     return render(request, "locations/list_pickup.html", {
         "pickups": pickups,
@@ -262,39 +253,74 @@ def view_pickup(request, pk):
         "total_qty": total_qty,
     })
     
+
 @staff_required
 def list_order(request):
     current_tab = request.GET.get("tab", "all")
     if current_tab not in ("all", "processing", "finished", "delivered"):
         current_tab = "all"
 
-    pickups_qs = Pickup.objects.select_related("location").annotate(
+    category = request.GET.get("category", "")
+    valid_categories = dict(Item.CATEGORY_CHOICES)
+    if category not in valid_categories:
+        category = ""
+
+    base_qs = Pickup.objects.select_related("location").annotate(
         total_items=Sum("items__quantity")
     )
-
-    if current_tab == "processing":
-        pickups_qs = pickups_qs.filter(status=Pickup.STATUS_PROCESSING)
-    elif current_tab == "finished":
-        pickups_qs = pickups_qs.filter(status=Pickup.STATUS_FINISHED)
-    elif current_tab == "delivered":
-        pickups_qs = pickups_qs.filter(status=Pickup.STATUS_DELIVERED)
-    else:
-        pickups_qs = pickups_qs.filter(
+    if category:
+        base_qs = base_qs.filter(item_category=category)
+    if current_tab == "all":
+        pickups_qs = base_qs.filter(
             status__in=[
                 Pickup.STATUS_PROCESSING,
                 Pickup.STATUS_FINISHED,
                 Pickup.STATUS_DELIVERED,
             ]
+        ).order_by("-invoice_id", "-created_at")
+
+        paginator = Paginator(pickups_qs, 50)
+        page_obj = paginator.get_page(request.GET.get("page"))
+
+        return render(request, "locations/list_order.html", {
+            "page_obj": page_obj,
+            "current_tab": current_tab,
+            "current_category": category,
+            "category_choices": Item.CATEGORY_CHOICES,
+        })
+    if current_tab == "delivered":
+        pickups_qs = base_qs.filter(status=Pickup.STATUS_DELIVERED).order_by("-delivered_at")
+
+        paginator = Paginator(pickups_qs, 50)
+        page_obj = paginator.get_page(request.GET.get("page"))
+
+        grouped_pickups = _group_by_date(
+            page_obj.object_list,
+            date_key=lambda p: timezone.localtime(p.delivered_at).date(),
+            item_key="pickups",
         )
 
-    pickups_qs = pickups_qs.order_by("-invoice_id", "-created_at")
+        return render(request, "locations/list_order.html", {
+            "page_obj": page_obj,
+            "grouped_pickups": grouped_pickups,
+            "current_tab": current_tab,
+            "current_category": category,
+            "category_choices": Item.CATEGORY_CHOICES,
+        })
+    status_map = {
+        "processing": Pickup.STATUS_PROCESSING,
+        "finished": Pickup.STATUS_FINISHED,
+    }
+    pickups_qs = base_qs.filter(status=status_map[current_tab]).order_by("-created_at")
 
-    paginator = Paginator(pickups_qs, 50)
-    page_obj = paginator.get_page(request.GET.get("page"))
+    grouped_pickups = _group_pickups_by_date(pickups_qs)
 
     return render(request, "locations/list_order.html", {
-        "page_obj": page_obj,
+        "grouped_pickups": grouped_pickups,
         "current_tab": current_tab,
+        "employees": Employee.objects.filter(is_active=True).order_by("user__first_name"),
+        "current_category": category,
+        "category_choices": Item.CATEGORY_CHOICES,
     })
     
 @staff_required
@@ -504,7 +530,7 @@ def quick_add_pickup(request, pk):
 
 @staff_required
 def set_pickup_status(request, pk, status):
-    if status not in (Pickup.STATUS_PICKED_UP, Pickup.STATUS_FINISHED, Pickup.STATUS_DELIVERED):
+    if status not in (Pickup.STATUS_PICKED_UP, Pickup.STATUS_DELIVERED):
         return redirect(request.META.get("HTTP_REFERER", "list_pickup"))
  
     pickup = get_object_or_404(Pickup, pk=pk)
@@ -527,6 +553,28 @@ def set_pickup_status(request, pk, status):
     messages.success(request, f"Marked as {pickup.get_status_display()}.")
     return redirect(request.META.get("HTTP_REFERER", "list_pickup"))
 
+@staff_required
+def mark_pickup_finished(request, pk):
+    pickup = get_object_or_404(Pickup, pk=pk)
+    if request.method == "POST":
+        employee = Employee.objects.filter(pk=request.POST.get("finished_by")).first()
+        if not employee:
+            messages.error(request, "Select who finished this pickup.")
+            return redirect(request.META.get("HTTP_REFERER", "list_order"))
+
+        pickup.status = Pickup.STATUS_FINISHED
+        pickup.finished_by = employee
+        pickup.save(update_fields=["status", "finished_by"])
+
+        if _telegram_enabled('set_pickup_status'):
+            _send_telegram(
+                f"🔄 *Status Updated*\n"
+                f"📍 {pickup.location.name}\n"
+                f"➡️ Finished by {employee.user.get_full_name() or employee.user.username}\n"
+                f"🕐 {timezone.localtime().strftime('%b %d, %Y · %I:%M %p')}"
+            )
+        messages.success(request, f"Marked as finished by {employee.user.get_full_name() or employee.user.username}.")
+    return redirect(request.META.get("HTTP_REFERER", "list_order"))
 
 @staff_required
 def list_expense(request):
@@ -538,13 +586,12 @@ def list_expense(request):
 
     today_total = expenses_qs.aggregate(t=Sum("amount"))["t"] or 0
 
-    def group_date(e):
-        return e.date
-
-    grouped_expenses = [
-        {"label": _date_group_label(d, today), "expenses": list(items)}
-        for d, items in groupby(page_obj.object_list, key=group_date)
-    ]
+    grouped_expenses = _group_by_date(
+        page_obj.object_list,
+        date_key=lambda e: e.date,
+        item_key="expenses",
+        include_days_ago=False,
+    )
 
     return render(request, "locations/list_expense.html", {
         "page_obj": page_obj,
@@ -592,67 +639,38 @@ def daily_dashboard(request):
     except ValueError:
         day = today
  
-    # --- Payments received (money actually collected today) ---
-    paid_today = Pickup.objects.filter(paid_at__date=day).select_related("location").order_by("-paid_at")
-    upi_total = 0
-    cash_total = 0
-    for p in paid_today:
-        if p.payment_method == Pickup.PAYMENT_UPI:
-            upi_total += p.amount_paid or 0
-        elif p.payment_method == Pickup.PAYMENT_CASH:
-            cash_total += p.amount_paid or 0
-    total_received = upi_total + cash_total
- 
-    # --- Sales: value of items added to pickups today ---
-    total_sales = PickupItem.objects.filter(created_at__date=day).aggregate(
-        t=Sum(F("price") * F("quantity"))
-    )["t"] or 0
- 
-    # --- Expenses: wages earned today, advances given today, other expenses today ---
-    todays_attendance = Attendance.objects.filter(date=day).select_related("employee__user").order_by("employee__user__first_name")
-    wage_rows = []
-    wage_total = 0
-    for a in todays_attendance:
-        wage = a.employee.daily_wage if a.day_type == "full" else a.employee.daily_wage // 2
-        wage_total += wage
-        wage_rows.append({
-            "name": a.employee.user.get_full_name() or a.employee.user.username,
-            "day_type": a.day_type,
-            "wage": wage,
+    day_pickups = Pickup.objects.filter(created_at__date=day).exclude(status=Pickup.STATUS_CANCELLED)
+    total_pickups = day_pickups.count()
+
+    finished_statuses = [Pickup.STATUS_FINISHED, Pickup.STATUS_DELIVERED]
+
+    category_rows = []
+    for code, label in Item.CATEGORY_CHOICES:
+        cat_pickups = day_pickups.filter(item_category=code)
+        cat_items = PickupItem.objects.filter(pickup__in=cat_pickups)
+
+        category_rows.append({
+            "label": label,
+            "total_pickups": cat_pickups.count(),
+            "finished_pickups": cat_pickups.filter(status__in=finished_statuses).count(),
+            "total_items": cat_items.aggregate(t=Sum("quantity"))["t"] or 0,
+            "completed_items": cat_items.filter(
+                pickup__status__in=finished_statuses
+            ).aggregate(t=Sum("quantity"))["t"] or 0,
+            "amount": cat_items.aggregate(t=Sum(F("price") * F("quantity")))["t"] or 0,
         })
- 
-    advances_today = Advance.objects.filter(date=day).select_related("employee__user").order_by("-id")
-    advance_total = advances_today.aggregate(t=Sum("amount"))["t"] or 0
- 
-    expenses_today = Expense.objects.filter(date=day).order_by("-id")
-    other_expense_total = expenses_today.aggregate(t=Sum("amount"))["t"] or 0
- 
-    total_expense = wage_total + advance_total + other_expense_total
- 
-    profit = total_received - total_expense
- 
+
     prev_day = day - timezone.timedelta(days=1)
     next_day = day + timezone.timedelta(days=1)
- 
+
     context = {
         "day": day,
         "today": today,
         "is_today": day == today,
         "prev_day": prev_day,
         "next_day": next_day,
-        "upi_total": upi_total,
-        "cash_total": cash_total,
-        "total_received": total_received,
-        "total_sales": total_sales,
-        "wage_total": wage_total,
-        "advance_total": advance_total,
-        "other_expense_total": other_expense_total,
-        "total_expense": total_expense,
-        "profit": profit,
-        "paid_pickups": paid_today,
-        "wage_rows": wage_rows,
-        "advances_today": advances_today,
-        "expenses_today": expenses_today,
+        "total_pickups": total_pickups,
+        "category_rows": category_rows,
     }
     return render(request, "locations/daily_dashboard.html", context)
 

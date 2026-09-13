@@ -1,9 +1,12 @@
 import requests
 from functools import wraps
-
+from itertools import groupby
 from simple_history.utils import get_history_model_for_model
+
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.utils import timezone
+
 from .models import (
     GeneralSettings, User, Location, Pickup, Item,
     PickupItem, Employee, Advance, Attendance, Expense,
@@ -68,6 +71,28 @@ def _date_group_label(d, today):
     if 2 <= delta <= 6:
         return d.strftime("%A")  # e.g. "Sunday"
     return d.strftime("%b %d, %Y")  # e.g. "Jul 28, 2026"
+
+def _group_by_date(items, date_key, item_key, include_days_ago=True):
+    today = timezone.localdate()
+    groups = []
+    for d, group_items in groupby(items, key=date_key):
+        group_items = list(group_items)
+        group = {
+            "label": _date_group_label(d, today),
+            item_key: group_items,
+        }
+        if include_days_ago:
+            group["days_ago"] = (today - d).days
+        groups.append(group)
+    return groups
+
+
+def _group_pickups_by_date(pickups):
+    return _group_by_date(
+        pickups,
+        date_key=lambda p: timezone.localtime(p.created_at).date(),
+        item_key="pickups",
+    )
 
 def get_display_label(instance_record, model):
     """Best-effort human readable label for a historical row."""

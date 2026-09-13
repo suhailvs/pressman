@@ -161,7 +161,8 @@
             <span class="item-row__cat-tag item-row__cat-tag--{{ pickup_item.item.item_category }}">{{ pickup_item.item.get_item_category_display }}</span>
           </span>
           <span class="item-row__total">₹{{ pickup_item.total }}</span>
-          <form method="post" action="{% url 'remove_pickup_item' pickup_item.pk %}" class="item-row__remove-form">
+          <form method="post" action="{% url 'remove_pickup_item' pickup_item.pk %}" class="item-row__remove-form"
+            onsubmit="return confirm('Remove {{ pickup_item.item.name }} from this pickup?');">
             {% csrf_token %}
             <button type="submit" class="item-row__remove" aria-label="Remove {{ pickup_item.item.name }}">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">

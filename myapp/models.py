@@ -80,6 +80,10 @@ class Pickup(models.Model):
     location = models.ForeignKey("Location", on_delete=models.CASCADE, related_name="pickups")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
     invoice_id = models.PositiveIntegerField(null=True, blank=True, unique=True)
+    finished_by = models.ForeignKey(
+        "Employee", on_delete=models.CASCADE, null=True, blank=True,
+        related_name="finished_pickups",
+    )
     picked_up_at = models.DateTimeField(blank=True, null=True)
     delivered_at = models.DateTimeField(blank=True, null=True)
     note = models.TextField(blank=True)
