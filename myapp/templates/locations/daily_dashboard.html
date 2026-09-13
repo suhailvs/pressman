@@ -43,6 +43,40 @@
       </tbody>
     </table>
   </div>
+
+  <div class="p-3 bg-white border-bottom border-3">
+    <p class="text-uppercase text-muted fw-bold small mb-2" style="font-size:0.72rem; letter-spacing:0.04em;">
+      Pickups ({{ total_pickups }})
+    </p>
+
+    {% if pickups %}
+      <ul class="list-group list-group-flush">
+        {% for p in pickups %}
+        <li class="list-group-item px-0 py-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">{{ p.location.name }}</span>
+            <span class="badge rounded-pill
+              {% if p.status == 'finished' or p.status == 'delivered' %}bg-success
+              {% elif p.status == 'pending' %}bg-warning text-dark
+              {% elif p.status == 'cancelled' %}bg-danger
+              {% else %}bg-secondary{% endif %}">
+              {{ p.get_status_display }}
+            </span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-1">
+            <small class="text-muted">
+              {% if p.item_category %}{{ p.get_item_category_display }} &middot; {% endif %}
+              {% if p.picked_up_at %}{{ p.picked_up_at|time:"h:i A" }}{% endif %}
+            </small>
+            <span class="fw-bold">&#8377;{{ p.items_total }}</span>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-muted small mb-0">No pickups on this day.</p>
+    {% endif %}
+  </div>
 {% endblock %}
 
 {% block extra_css %}

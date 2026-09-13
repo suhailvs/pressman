@@ -6,7 +6,18 @@
 
 
 {% block chat_header_title %}All Pickups <span class="count-badge">{{ pickups.count }}</span>{% endblock %}
-
+{% block chat_header_actions %}
+  {% if request.user.is_staff %}
+  <a href="{% url 'daily_dashboard' %}" class="icon-btn" aria-label="Daily dashboard">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="9" rx="1"/>
+      <rect x="14" y="3" width="7" height="5" rx="1"/>
+      <rect x="14" y="12" width="7" height="9" rx="1"/>
+      <rect x="3" y="16" width="7" height="5" rx="1"/>
+    </svg>
+  </a>
+  {% endif %}
+{% endblock %}
 {% block page_content %}
   <ul class="nav nav-underline pickup-tabs">
     <li class="nav-item">

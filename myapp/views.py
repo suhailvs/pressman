@@ -2,7 +2,7 @@ import re
 import calendar
 
 
-from datetime import date,time
+from datetime import date, datetime,time
 from weasyprint import HTML
 from simple_history.utils import get_history_model_for_model
 
@@ -638,10 +638,26 @@ def daily_dashboard(request):
         day = date.fromisoformat(date_str) if date_str else today
     except ValueError:
         day = today
- 
-    day_pickups = Pickup.objects.filter(created_at__date=day).exclude(status=Pickup.STATUS_CANCELLED)
+    
+    start = datetime.combine(day, time.min)
+    end = start + timezone.timedelta(days=1)
+
+    if settings.USE_TZ:
+        start = timezone.make_aware(start)
+        end = timezone.make_aware(end)
+
+    day_pickups = Pickup.objects.filter(
+        picked_up_at__gte=start,
+        picked_up_at__lt=end,
+    ).exclude(status=Pickup.STATUS_CANCELLED)
     total_pickups = day_pickups.count()
 
+    pickups_list = (
+        day_pickups
+        .select_related("location")
+        .prefetch_related("items")
+        .order_by("-picked_up_at")
+    )
     finished_statuses = [Pickup.STATUS_FINISHED, Pickup.STATUS_DELIVERED]
 
     category_rows = []
@@ -671,6 +687,7 @@ def daily_dashboard(request):
         "next_day": next_day,
         "total_pickups": total_pickups,
         "category_rows": category_rows,
+        "pickups": pickups_list, 
     }
     return render(request, "locations/daily_dashboard.html", context)
 
