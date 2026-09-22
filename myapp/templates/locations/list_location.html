@@ -93,6 +93,7 @@
             </span>
           {% endif %}
           <div class="chat-row__actions">
+            {% if location.latitude and location.longitude %}
             <a href="https://www.google.com/maps?q={{ location.latitude }},{{ location.longitude }}"
                target="_blank" rel="noopener"
                class="chat-row__action chat-row__action--navigate"
@@ -102,6 +103,7 @@
                 <polygon points="3 11 22 2 13 21 11 13 3 11"/>
               </svg>
             </a>
+            {% endif %}
             <form method="post" action="{% url 'quick_add_pickup' location.pk %}"
                   class="chat-row__action-form"
                   onclick="event.stopPropagation()">

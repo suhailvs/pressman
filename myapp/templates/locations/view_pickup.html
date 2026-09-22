@@ -44,7 +44,7 @@
         </span>
         {% if pickup.is_paid %}Paid{% else %}Mark Paid{% endif %}
       </button>
-
+      {% if location.latitude and location.longitude %}
       <a href="https://www.google.com/maps?q={{ location.latitude }},{{ location.longitude }}" target="_blank" rel="noopener" class="detail__action">
         <span class="detail__action-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -54,6 +54,7 @@
         </span>
         Map
       </a>
+      {% endif %}
       <a href="{% url 'pickup_invoice' pickup.pk %}" class="detail__action">
         <span class="detail__action-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">

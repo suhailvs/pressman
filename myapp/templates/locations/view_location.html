@@ -42,6 +42,7 @@
         </span>
         Call
       </a>
+      {% if location.latitude and location.longitude %}
       <a href="https://www.google.com/maps?q={{ location.latitude }},{{ location.longitude }}" target="_blank" rel="noopener" class="detail__action">
         <span class="detail__action-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -51,6 +52,7 @@
         </span>
         Map
       </a>
+      {% endif %}
     </div>
 
     <div class="detail__actions detail__actions--secondary">
@@ -119,7 +121,11 @@
         </span>
         <div class="detail__row-body">
           <span class="detail__row-label">Coordinates</span>
-          <span class="detail__row-value">{{ location.latitude }}, {{ location.longitude }}</span>
+            {% if location.latitude and location.longitude %}
+              {{ location.latitude }}, {{ location.longitude }}
+            {% else %}
+              Not added
+            {% endif %}
         </div>
       </div>
 
